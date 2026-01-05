@@ -1,8 +1,10 @@
+#define _POSIX_C_SOURCE 200809L //PARA PATH_MAX multiplataforma
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <stdlib.h>
-#include <linux/limits.h>
+#include <limits.h>
+
 
 int main() {
     char cwd[PATH_MAX];
