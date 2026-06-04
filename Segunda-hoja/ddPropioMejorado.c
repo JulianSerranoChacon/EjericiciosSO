@@ -6,23 +6,23 @@
 
 #define MAX_BUFFER 8192
 
-// Función para cerrar los ficheros de forma segura
-int cierraElPrograma(int *fIn, int *fOut) {
+int cierraElPrograma(int* fIn, int* fOut) {
     int exitCode = 0;
 
-    if(close(*fIn) == -1) { 
-        perror("Error cerrando fichero de entrada"); 
-        exitCode = 1; 
-    } else {
-        printf("Fichero de entrada cerrado correctamente\n");
+    if (*fIn != STDIN_FILENO) {
+        if (close(*fIn) == -1) {
+            perror("Error cerrando entrada");
+            exitCode = 1;
+        }
     }
 
-    if(close(*fOut) == -1) { 
-        perror("Error cerrando fichero de salida"); 
-        exitCode = 1; 
-    } else {
-        printf("Fichero de salida cerrado correctamente\n");
+    if (*fOut != STDOUT_FILENO) {
+        if (close(*fOut) == -1) {
+            perror("Error cerrando salida");
+            exitCode = 1;
+        }
     }
+
 
     *fIn = *fOut = -1;
     return exitCode;
@@ -47,19 +47,34 @@ int main(int argc, char* argv[]) {
     if(nsize > MAX_BUFFER) nsize = MAX_BUFFER;
     char buffer[MAX_BUFFER];
 
-    // Abrimos archivos
-    int fIn = open(argv[1], O_RDONLY);
-    if(fIn == -1) {
-        perror("Error abriendo fichero de entrada");
-        return 1;
+    int fIn, fOut;
+
+    if (argv[1][0] == '-') {
+        fIn = STDIN_FILENO;
+    } else {
+        fIn = open(argv[1], O_RDONLY);
+        if(fIn == -1) 
+        {
+            perror("Error abriendo fichero de entrada");
+            return 1;
+        }
     }
 
-    int fOut = open(argv[2], O_CREAT | O_WRONLY | O_TRUNC, 0666);
-    if(fOut == -1) {
-        perror("Error abriendo fichero de salida");
-        close(fIn);
-        return 1;
+    if (argv[2][0] == '-') {
+        fOut = STDOUT_FILENO;
+    } else 
+    {
+        fOut = open(argv[2], O_CREAT | O_WRONLY | O_TRUNC, 0666);
+
+        if(fOut == -1) 
+        {
+            perror("Error abriendo fichero de salida");
+            close(fIn);
+            return 1;
+        }
     }
+
+    // Abrimos archivos
 
     // Aplicamos seek en fichero de salida
     if(lseek(fOut, seek * nsize, SEEK_SET) == -1) {
