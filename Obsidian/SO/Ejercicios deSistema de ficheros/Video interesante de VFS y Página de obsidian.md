@@ -1,0 +1,2 @@
+- Video: https://www.youtube.com/watch?v=Fq0ks85G6-o
+- Obsidian: https://maplecircuit.dev/videos/2024-10-27-vfs-how-your-system-knows-where-files-are.html

@@ -1,107 +1,177 @@
 #include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <stdlib.h>
-#include <errno.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #define MAX_BUFFER 8192
 
-int cierraElPrograma(int* fIn, int* fOut) {
-    int exitCode = 0;
+int cerrarArchivos(int *fIn, int *fOut)
+{
+    int error = 0;
 
-    if (*fIn != STDIN_FILENO) {
-        if (close(*fIn) == -1) {
-            perror("Error cerrando entrada");
-            exitCode = 1;
+    if (*fIn != STDIN_FILENO && *fIn >= 0)
+    {
+        if (close(*fIn) == -1)
+        {
+            perror("close entrada");
+            error = 1;
         }
     }
 
-    if (*fOut != STDOUT_FILENO) {
-        if (close(*fOut) == -1) {
-            perror("Error cerrando salida");
-            exitCode = 1;
+    if (*fOut != STDOUT_FILENO && *fOut >= 0)
+    {
+        if (close(*fOut) == -1)
+        {
+            perror("close salida");
+            error = 1;
         }
     }
 
+    *fIn = -1;
+    *fOut = -1;
 
-    *fIn = *fOut = -1;
-    return exitCode;
+    return error;
 }
 
-int main(int argc, char* argv[]) {
-    if(argc < 6) {
-        fprintf(stderr, "Uso: %s <input_file> <output_file> <block_size> <block_count> <seek>\n", argv[0]);
-        return 1;
+int main(int argc, char *argv[])
+{
+    if (argc != 6)
+    {
+        fprintf(stderr,
+                "Uso: %s <input_file> <output_file> <block_size> <block_count> <seek>\n",
+                argv[0]);
+        return EXIT_FAILURE;
     }
 
-    // Convertimos argumentos a enteros
-    size_t nsize = atoi(argv[3]);
-    int nblocks = atoi(argv[4]);
-    int seek = atoi(argv[5]);
+    size_t block_size = (size_t)atoi(argv[3]);
+    int block_count = atoi(argv[4]);
+    int seek_blocks = atoi(argv[5]);
 
-    if(nsize <= 0 || nblocks <= 0 || seek < 0) {
-        fprintf(stderr, "block_size y block_count deben ser > 0, seek >= 0\n");
-        return 1;
+    if (block_size <= 0 || block_count <= 0 || seek_blocks < 0)
+    {
+        fprintf(stderr,
+                "Error: block_size y block_count deben ser > 0 y seek >= 0\n");
+        return EXIT_FAILURE;
     }
 
-    if(nsize > MAX_BUFFER) nsize = MAX_BUFFER;
+    if (block_size > MAX_BUFFER)
+        block_size = MAX_BUFFER;
+
     char buffer[MAX_BUFFER];
 
-    int fIn, fOut;
+    int fdIn = -1;
+    int fdOut = -1;
 
-    if (argv[1][0] == '-') {
-        fIn = STDIN_FILENO;
-    } else {
-        fIn = open(argv[1], O_RDONLY);
-        if(fIn == -1) 
-        {
-            perror("Error abriendo fichero de entrada");
-            return 1;
-        }
-    }
-
-    if (argv[2][0] == '-') {
-        fOut = STDOUT_FILENO;
-    } else 
+    /* Abrir entrada */
+    if (strcmp(argv[1], "-") == 0)
     {
-        fOut = open(argv[2], O_CREAT | O_WRONLY | O_TRUNC, 0666);
+        fdIn = STDIN_FILENO;
+    }
+    else
+    {
+        fdIn = open(argv[1], O_RDONLY);
 
-        if(fOut == -1) 
+        if (fdIn == -1)
         {
-            perror("Error abriendo fichero de salida");
-            close(fIn);
-            return 1;
+            perror("open entrada");
+            return EXIT_FAILURE;
         }
     }
 
-    // Abrimos archivos
+    /* Abrir salida */
+    if (strcmp(argv[2], "-") == 0)
+    {
+        fdOut = STDOUT_FILENO;
+    }
+    else
+    {
+        fdOut = open(argv[2],
+                     O_WRONLY | O_CREAT | O_TRUNC,
+                     0664);
 
-    // Aplicamos seek en fichero de salida
-    if(lseek(fOut, seek * nsize, SEEK_SET) == -1) {
-        perror("Error haciendo seek en fichero de salida");
-        cierraElPrograma(&fIn, &fOut);
-        return 1;
+        if (fdOut == -1)
+        {
+            perror("open salida");
+            cerrarArchivos(&fdIn, &fdOut);
+            return EXIT_FAILURE;
+        }
     }
 
-    // Copiamos nblocks bloques
-    for(int i = 0; i < nblocks; i++) {
-        ssize_t leidos = read(fIn, buffer, nsize);
-        if(leidos == -1) {
-            perror("Error leyendo fichero de entrada");
-            cierraElPrograma(&fIn, &fOut);
-            return 1;
-        } else if(leidos == 0) {
-            // EOF
+    /* Aplicar seek si la salida es un fichero */
+    if (fdOut != STDOUT_FILENO && seek_blocks > 0)
+    {
+        off_t desplazamiento = (off_t)seek_blocks * block_size;
+
+        if (lseek(fdOut, desplazamiento, SEEK_SET) == (off_t)-1)
+        {
+            perror("lseek");
+            cerrarArchivos(&fdIn, &fdOut);
+            return EXIT_FAILURE;
+        }
+    }
+
+    int bloquesCopiados = 0;
+
+    for (int i = 0; i < block_count; i++)
+    {
+        size_t totalLeidos = 0;
+
+        /* Intentar completar un bloque */
+        while (totalLeidos < block_size)
+        {
+            ssize_t n = read(fdIn,
+                             buffer + totalLeidos,
+                             block_size - totalLeidos);
+
+            if (n == -1)
+            {
+                perror("read");
+                cerrarArchivos(&fdIn, &fdOut);
+                return EXIT_FAILURE;
+            }
+
+            if (n == 0) /* EOF */
+                break;
+
+            totalLeidos += n;
+        }
+
+        /* EOF sin leer nada */
+        if (totalLeidos == 0)
             break;
+
+        /* Escribir todo lo leído */
+        size_t totalEscritos = 0;
+
+        while (totalEscritos < totalLeidos)
+        {
+            ssize_t n = write(fdOut,
+                              buffer + totalEscritos,
+                              totalLeidos - totalEscritos);
+
+            if (n == -1)
+            {
+                perror("write");
+                cerrarArchivos(&fdIn, &fdOut);
+                return EXIT_FAILURE;
+            }
+
+            totalEscritos += n;
         }
 
-        ssize_t escritos = write(fOut, buffer, leidos);
-        if(escritos == -1) {
-            perror("Error escribiendo fichero de salida");
-            cierraElPrograma(&fIn, &fOut);
-            return 1;
-        }
+        bloquesCopiados++;
+
+        /* EOF durante este bloque */
+        if (totalLeidos < block_size)
+            break;
     }
 
-    return cierraElPrograma(&fIn, &fOut);
+    printf("Copiados %d bloques de %zu bytes\n",
+           bloquesCopiados,
+           block_size);
+
+    return cerrarArchivos(&fdIn, &fdOut);
 }
