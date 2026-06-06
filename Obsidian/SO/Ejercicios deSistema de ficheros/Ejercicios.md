@@ -895,3 +895,134 @@ El resultado demuestra que el fichero generado es un **fichero sparse**, ya que:
 Esto confirma que el programa implementa correctamente el comportamiento de creación de ficheros dispersos (_sparse files_), donde las zonas no escritas no consumen espacio físico en disco.
 
 ---
+
+#### 💻Ejercicio 9. Escribir un programa que tenga un comportamiento similar a ls. El programa mils mostrará  el contenido de un directorio cuya ruta se proporciona como argumento. Para ello, el programa:
+
+- Comprobará que el argumento es un directorio y que tiene acceso con la llamada al sistema adecuada.
+    
+- Recorrerá las entradas del directorio y escribirá su nombre de fichero. Además:
+    
+
+- Si es un fichero regular y tiene permiso de ejecución para usuario, grupo u otros, escribirá el carácter * después del nombre.
+    
+- Si es un directorio escribirá el carácter / después del nombre.
+    
+- Si es un enlace simbólico, escribirá -> y el nombre del fichero enlazado obtenido con readlink(2).
+    
+
+Nota: la variable d_name de las estructuras dirent sólo contienen el nombre para obtener los atributos del archivo es necesario especificar la ruta completa concatenando el nombre del directorio, en el primer argumento. 
+
+Para concatenar ambas cadenas, directorio y nombre del archivo, definir un buffer de tamaño PATH_MAX (#include <linux/limits.h>) y la llamada snprintf(3).
+
+Ejemplo de uso:
+
+```C
+
+#include<stdio.h>
+#include<dirent.h>
+#include<errno.h>
+#include<sys/stat.h>
+#include<linux/limits.h>
+#include<unistd.h>
+
+int main (int argc, char *argv[]){
+
+    if(argc < 2){
+        printf("El programa debe recibir al menos un argumento");
+        return 1;
+    }
+
+    DIR* dir = opendir(argv[1]);
+    if(dir == NULL){
+        printf("El parametro facilitado no es un directorio o no se puede abrir");
+        return errno;
+    }
+
+    struct dirent* entry = readdir(dir);
+
+    while ((entry = readdir(dir)) != NULL)
+    {
+
+        struct stat entryStat;
+        char path[PATH_MAX];
+
+        snprintf(path, PATH_MAX, "%s/%s", argv[1], entry->d_name);
+
+        lstat(path,&entryStat);
+
+        printf("%s",entry->d_name);
+
+        if(S_ISDIR(entryStat.st_mode))
+            printf("/");
+        else if(S_ISLNK(entryStat.st_mode)){
+            char link[PATH_MAX];
+            ssize_t len =  readlink(path,link,PATH_MAX-1);
+            link[len] = '\0'; 
+            printf(" -> %s", link);
+        }
+        else if(S_ISREG(entryStat.st_mode) && 
+                ((entryStat.st_mode & S_IXUSR) || 
+                (entryStat.st_mode & S_IXGRP) || 
+                (entryStat.st_mode & S_IXOTH)) )
+            printf("*");
+
+        printf("\n");
+    }
+
+    if(closedir(dir) == -1){
+        perror("Error al cerrar el directoriio");
+        return 1;
+    }
+
+    return 0;
+}
+
+```
+
+
+``` Bash
+$ ./mils dir_prueba/
+
+Contenidos del direcotrio dir_prueba/
+
+---------------------------------------
+
+programa1*
+
+subdir1/
+
+archivo1
+
+../
+
+archivo2
+
+link1 -> /etc/passwd
+
+./
+
+#Comprobación comparando la salida con el comando ls
+
+$ ls -l dir_prueba/
+
+total 12
+
+drwxr-xr-x 3 ubuntu ubuntu 4096 Feb 3 22:02 .
+
+drwxr-xr-x 3 ubuntu ubuntu 4096 Feb 3 22:02 ..
+
+-rw-r--r-- 1 ubuntu ubuntu    0 Feb 3 22:02 archivo1
+
+-rw-r--r-- 1 ubuntu ubuntu    0 Feb 3 22:02 archivo2
+
+lrwxrwxrwx 1 ubuntu ubuntu   11 Feb 3 22:02 link1 -> /etc/passwd
+
+-rwxr-xr-x 1 ubuntu ubuntu    0 Feb 3 22:02 programa1
+
+drwxr-xr-x 2 ubuntu ubuntu 4096 Feb 3 22:02 subdir1`
+```
+
+
+
+
+![[Pasted image 20260606173021.png]]

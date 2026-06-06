@@ -13,7 +13,7 @@ int main(int argc, char *argv[]){
         return 1;
     }
 
-    if(stat(argv[1],&mstat) == -1){
+    if(lstat(argv[1],&mstat) == -1){
         fprintf(stderr,"Se ha producido un eror con la ruta del archivo: ",argv[1]);
         printf("\n");
         return 1;
