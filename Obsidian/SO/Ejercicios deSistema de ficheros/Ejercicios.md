@@ -1022,7 +1022,962 @@ lrwxrwxrwx 1 ubuntu ubuntu   11 Feb 3 22:02 link1 -> /etc/passwd
 drwxr-xr-x 2 ubuntu ubuntu 4096 Feb 3 22:02 subdir1`
 ```
 
-
-
-
 ![[Pasted image 20260606173021.png]]
+
+---
+
+#### Ejercicio 10.  Un dispositivo de memoria flash de 64 MB de capacidad y bloques de 1KB, contiene un sistema de ficheros FAT. Describa la estructura de la tabla y cómo se representa la asignación de bloques a un fichero. ¿Cuántos bytes son necesarios para almacenar la tabla FAT?
+
+Respuesta:
+
+Para resolver el ejercicio, analicemos los datos del sistema de archivos FAT.
+
+### 1. Número de bloques del dispositivo
+
+Capacidad total de la memoria:
+
+[  
+64\ \text{MB} = 64 \times 1024 \times 1024 = 67,108,864\ \text{bytes}  
+]
+
+Tamaño de cada bloque:
+
+[  
+1\ \text{KB} = 1024\ \text{bytes}  
+]
+
+Número total de bloques:
+
+[  
+\frac{67,108,864}{1024} = 65,536\ \text{bloques}  
+]
+
+---
+
+### 2. Estructura de la tabla FAT
+
+La **FAT (File Allocation Table)** es una tabla donde existe **una entrada por cada bloque (o clúster) del disco**.
+
+Cada entrada almacena información sobre ese bloque:
+
+- **0** → bloque libre.
+    
+- **Valor especial EOF (End Of File)** → último bloque de un fichero.
+    
+- **Número de otro bloque** → indica cuál es el siguiente bloque del fichero.
+    
+
+Como hay **65 536 bloques**, cada entrada debe poder almacenar números entre 0 y 65 535, por lo que se necesitan:
+
+[  
+\log_2(65,536)=16\ \text{bits}  
+]
+
+Es decir, **2 bytes por entrada**.
+
+---
+
+### 3. Representación de la asignación de bloques a un fichero
+
+La FAT representa un fichero mediante una **lista enlazada implícita**.
+
+Ejemplo:
+
+Supongamos que un fichero comienza en el bloque 10 y ocupa los bloques:
+
+[  
+10 \rightarrow 25 \rightarrow 18 \rightarrow 40 \rightarrow EOF  
+]
+
+La tabla FAT contendría:
+
+|Bloque|Entrada FAT|
+|---|---|
+|10|25|
+|25|18|
+|18|40|
+|40|EOF|
+
+El directorio del fichero almacena únicamente el **primer bloque** (en este caso, el bloque 10). Siguiendo los enlaces de la FAT se recuperan todos los bloques del fichero.
+
+---
+
+### 4. Tamaño necesario para almacenar la FAT
+
+Número de entradas:
+
+[  
+65,536  
+]
+
+Tamaño de cada entrada:
+
+[  
+2\ \text{bytes}  
+]
+
+Por tanto:
+
+[  
+65,536 \times 2 = 131,072\ \text{bytes}  
+]
+
+o equivalentemente:
+
+[  
+\frac{131,072}{1024} = 128\ \text{KB}  
+]
+
+---
+
+## Respuesta final
+
+- La **tabla FAT** contiene una entrada por cada bloque del dispositivo. Cada entrada indica si el bloque está libre, cuál es el siguiente bloque del fichero o si es el último bloque del mismo.
+    
+- La asignación de bloques de un fichero se representa mediante una **lista enlazada de bloques**, almacenándose en el directorio el número del primer bloque del fichero.
+    
+- El dispositivo tiene **65 536 bloques**, por lo que cada entrada de la FAT necesita **16 bits (2 bytes)**.
+    
+- El tamaño total de la FAT es:
+    
+
+[  
+65,536 \times 2 = 131,072\ \text{bytes} = 128\ \text{KB}  
+]
+
+**Por tanto, son necesarios 131 072 bytes (128 KB) para almacenar la tabla FAT.**
+
+
+---
+
+
+
+Ejercicio 11. En la siguiente figura se representa una tabla FAT y el contenido de cierto directorio: que incluye: el nombre del archivo, el tipo (F=archivo, D=directorio) y el número del bloque inicial.
+
+
+|     | Bloque |     | Bloque |     | Nombre   | Tipo | Bloque |
+| --- | ------ | --- | ------ | --- | -------- | ---- | ------ |
+| 0   |        | 10  |        |     | DATA.TXT | F    | 3      |
+| 1   |        | 11  |        |     |          |      |        |
+| 2   |        | 12  |        |     |          |      |        |
+| 3   | 15     | 13  |        |     |          |      |        |
+| 4   |        | 14  |        |     |          |      |        |
+| 5   |        | 15  | [EOF]  |     |          |      |        |
+| 6   |        | 16  |        |     |          |      |        |
+| 7   |        | 17  |        |     |          |      |        |
+| 8   |        | 18  |        |     |          |      |        |
+| 9   |        | 19  |        |     |          |      |        |
+  
+El tamaño de bloque en este sistema de ficheros es de 512 bytes y que el sistema operativo siempre asigna los bloques empezando por el primer bloque libre (número inferior) disponible. Completar el estado final de las tablas tras realizar (en orden) las siguientes operaciones:
+
+1. Creación del fichero DATA1.TXT de tamaño 10 bytes.
+    
+2. Creación del fichero DATA2.TXT de tamaño 1200 bytes. 
+    
+3. Se añaden datos al archivo DATA.TXT que requieren 2 bloques más. 
+    
+4. Creación del directorio LOGS. 
+    
+
+Creacion del fichero RESULTS.JPG de tamaño 2 Kbytes
+
+Vamos resolviendo las operaciones **una a una**, recordando que:
+
+- Tamaño de bloque = **512 bytes**.
+    
+- Los bloques se asignan **empezando por el bloque libre con menor número**.
+    
+- Estado inicial:
+    
+    - `DATA.TXT` comienza en el bloque **3**.
+        
+    - FAT[3] = 15
+        
+    - FAT[15] = EOF
+        
+
+Por tanto:
+
+```text
+DATA.TXT: 3 → 15 → EOF
+```
+
+Bloques ocupados inicialmente: **3 y 15**.
+
+Bloques libres inicialmente:
+
+```text
+0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19
+```
+
+---
+
+## 1) Crear DATA1.TXT de 10 bytes
+
+Necesita:
+
+[  
+\lceil 10/512 \rceil = 1 \text{ bloque}  
+]
+
+Primer bloque libre: **0**
+
+```text
+DATA1.TXT: 0 → EOF
+```
+
+FAT:
+
+```text
+FAT[0] = EOF
+```
+
+---
+
+## 2) Crear DATA2.TXT de 1200 bytes
+
+Necesita:
+
+[  
+\lceil 1200/512 \rceil = 3 \text{ bloques}  
+]
+
+Primeros bloques libres: **1, 2 y 4**
+
+```text
+DATA2.TXT: 1 → 2 → 4 → EOF
+```
+
+FAT:
+
+```text
+FAT[1] = 2
+FAT[2] = 4
+FAT[4] = EOF
+```
+
+---
+
+## 3) Añadir datos a DATA.TXT que requieren 2 bloques más
+
+Estado actual:
+
+```text
+DATA.TXT: 3 → 15 → EOF
+```
+
+Último bloque: **15**
+
+Primeros bloques libres: **5 y 6**
+
+La cadena queda:
+
+```text
+DATA.TXT: 3 → 15 → 5 → 6 → EOF
+```
+
+FAT:
+
+```text
+FAT[15] = 5
+FAT[5] = 6
+FAT[6] = EOF
+```
+
+---
+
+## 4) Crear el directorio LOGS
+
+Suponiendo que un directorio vacío ocupa **1 bloque**.
+
+Primer bloque libre: **7**
+
+```text
+LOGS: 7 → EOF
+```
+
+FAT:
+
+```text
+FAT[7] = EOF
+```
+
+---
+
+## 5) Crear RESULTS.JPG de 2 KB
+
+2 KB = 2048 bytes.
+
+Bloques necesarios:
+
+[  
+2048/512 = 4 \text{ bloques}  
+]
+
+Primeros bloques libres: **8, 9, 10 y 11**
+
+```text
+RESULTS.JPG: 8 → 9 → 10 → 11 → EOF
+```
+
+FAT:
+
+```text
+FAT[8] = 9
+FAT[9] = 10
+FAT[10] = 11
+FAT[11] = EOF
+```
+
+---
+
+## Estado final de la FAT
+
+|Bloque|FAT|
+|---|---|
+|0|EOF|
+|1|2|
+|2|4|
+|3|15|
+|4|EOF|
+|5|6|
+|6|EOF|
+|7|EOF|
+|8|9|
+|9|10|
+|10|11|
+|11|EOF|
+|12|Libre|
+|13|Libre|
+|14|Libre|
+|15|5|
+|16|Libre|
+|17|Libre|
+|18|Libre|
+|19|Libre|
+
+---
+
+## Estado final del directorio
+
+|Nombre|Tipo|Bloque inicial|
+|---|---|---|
+|DATA.TXT|F|3|
+|DATA1.TXT|F|0|
+|DATA2.TXT|F|1|
+|LOGS|D|7|
+|RESULTS.JPG|F|8|
+
+---
+
+### Cadenas finales de bloques
+
+```text
+DATA.TXT     : 3 → 15 → 5 → 6 → EOF
+DATA1.TXT    : 0 → EOF
+DATA2.TXT    : 1 → 2 → 4 → EOF
+LOGS         : 7 → EOF
+RESULTS.JPG  : 8 → 9 → 10 → 11 → EOF
+```
+
+Este sería el **estado final de las tablas FAT y del directorio** tras ejecutar todas las operaciones en el orden indicado.
+
+|     | Bloque |     | Bloque |     | Nombre      | Tipo | Bloque |
+| --- | ------ | --- | ------ | --- | ----------- | ---- | ------ |
+| 0   | EOF    | 10  | 11     |     | DATA.TXT    | F    | 3      |
+| 1   | 2      | 11  | EOF    |     | DATA1.TXT   | F    | 0      |
+| 2   | 4      | 12  |        |     | DATA2.TXT   | F    | 1      |
+| 3   | 15     | 13  |        |     | LOGS        | D    | 7      |
+| 4   | EOF    | 14  |        |     | RESULTS.JPG | F    | 8      |
+| 5   | 6      | 15  | 5      |     |             |      |        |
+| 6   | EOF    | 16  |        |     |             |      |        |
+| 7   | EOF    | 17  |        |     |             |      |        |
+| 8   | 9      | 18  |        |     |             |      |        |
+| 9   | 10     | 19  |        |     |             |      |        |
+
+---
+
+#### 💻 Ejercicio 13. Crear un sistema de ficheros ext2 con la siguiente estructura de ficheros y directorios. Nota: los comandos mostrados a continuación se ejecutarán como root (cambiar a ejecutando sudo -i):
+
+  
+
+1. Crear un fichero de 100MB.
+    
+```bash
+# truncate --size 100M ext2.img 
+```
+
+2. Crear el sistema de ficheros ext2 en el fichero anterior. Nota: normalmente los sistemas de ficheros se crean en dispositivos en modo bloque. También es posible usar un fichero como soporte.
+    
+```bash
+# mkfs.ext2 ext2.img
+```
+
+¿Qué tamaño de bloque se ha usado? ¿Cuántos inodos hay disponibles?
+
+3. Montar el sistema de ficheros (la opción especial loop, permite montar el fichero accediendo mediante un dispositivo en modo bloque especial, loopdevice en /dev/loop[0-9])
+    
+```bash
+# mount -t ext2 -o loop ext2.img /mnt
+```
+
+4. En /mnt crear los siguientes contenidos:
+    
+
+```bash
+# mkdir /mnt/dir
+
+# echo "123456789" > /mnt/dir/small.txt
+
+# dd if=/dev/random of=/mnt/dir/big bs=1024 count=5120
+
+# dd if=/dev/random of=/mnt/dir/sparse bs=1024 count=1 seek=5192
+```
+
+
+Comprobar que se han creado correctamente los ficheros:
+
+```bash
+# ls -lhis /mnt/dir/
+
+total 5.1M
+
+15 5.1M -rw-r--r-- 1 root root 5.0M Feb 31 13:31 big
+
+14 4.0K -rw-r--r-- 1 root root   10 Feb 31 13:29 small.txt
+
+16  12K -rw-r--r-- 1 root root 5.1M Feb 31 14:15 sparse
+```
+
+5. Usando la herramienta debugfs estudiar la estructura de los inodos ext2 de los tres ficheros (comando stat).  El fichero se referencia con el número de inodo en la forma `<inodo>`:
+    
+``` bash
+$ debugfs -R "stat <14>" /dev/sda1
+
+Inode: 14   Type: regular    Mode:  0644   Flags: 0x0
+
+Generation: 3900547475    Version: 0x00000000:00000001
+
+User:     0   Group:     0   Project:     0   Size: 10
+
+File ACL: 0
+
+Links: 1   Blockcount: 8
+
+Fragment:  Address: 0    Number: 0    Size: 0
+
+ ctime: 0x68b44e22:7ba162a8 -- Sun Aug 31 13:29:06 2025
+
+ atime: 0x68b44e22:7ba162a8 -- Sun Aug 31 13:29:06 2025
+
+ mtime: 0x68b44e22:7ba162a8 -- Sun Aug 31 13:29:06 2025
+
+crtime: 0x68b44e22:7ba162a8 -- Sun Aug 31 13:29:06 2025
+
+Size of extra inode fields: 32
+
+BLOCKS:
+
+(0):24576
+
+TOTAL: 1
+``` 
+En este caso el tamaño es 10 bytes (correspondiente a los bytes de la cadena  “123456789\n”) que se almacenan en el bloque 24576 que usa el primer puntero directo (0).
+
+Cuestiones
+
+- Estudiar la estructura de bloques del fichero big:
+    
+
+- Bloques directos usados
+    
+- Bloque dónde se guarda el puntero indirecto (IND). Y los bloques usados en el primer nivel de indirecciń (12-1035)
+    
+- Bloque dónde se guarda el puntero doble indirecto (DIND). ¿Cuántos bloques indirectos (IND) hay en la tabla?. ¿Y los bloques usados para los bloques restantes (1036-1279)?
+    
+- ¿Cuántos bloques consume en total el archivo? ¿Cuántos bloques se usan para guardar datos útiles?
+    
+- Dibujar un esquema con las tablas usadas para almacenar el fichero.
+    
+
+- Considerar ahora el fichero sparse y repetir la cuestión anterior. Comparar los punteros inicializados en ambos casos.
+Respuesta:
+
+![[Pasted image 20260606233450.png]]
+
+![[Pasted image 20260606233556.png]]
+
+![[Pasted image 20260607000028.png]]
+
+![[Pasted image 20260607000945.png]]
+
+![[Pasted image 20260607001351.png]]
+
+![[Pasted image 20260607001412.png]]
+
+Perfecto, ya tienes toda la información necesaria para analizar la estructura de los inodos. De los resultados obtenidos se puede concluir:
+
+### 1. `small.txt` (inodo 9842)
+
+```text
+Size: 10
+Blockcount: 2
+BLOCKS:
+(0):41985
+TOTAL: 1
+```
+
+- Tamaño lógico: **10 bytes**.
+    
+- Utiliza **1 bloque de datos** (`TOTAL: 1`).
+    
+- Solo emplea un **puntero directo** (`(0):41985`).
+    
+- `Blockcount: 2` porque este campo se expresa en sectores de 512 bytes. Como el sistema de ficheros usa bloques de 1 KB:
+    
+
+[  
+2 \times 512 = 1024 \text{ bytes} = 1 \text{ bloque}  
+]
+
+---
+
+### 2. `big` (inodo 9843)
+
+```text
+Size: 5242880
+Blockcount: 10282
+...
+(0-11):42497-42508
+(IND):41714
+...
+(DIND):41715
+...
+TOTAL: 5141
+```
+
+- Tamaño lógico: **5 242 880 bytes (5 MB)**.
+    
+- Ocupa **5141 bloques de 1 KB** (`TOTAL: 5141`).
+    
+- Utiliza:
+    
+    - Los **12 punteros directos** (`(0-11)`).
+        
+    - **Punteros indirectos simples** (`IND`).
+        
+    - Un **puntero indirecto doble** (`DIND`).
+        
+- No aparece ningún puntero triple indirecto.
+    
+
+El valor:
+
+```text
+Blockcount: 10282
+```
+
+equivale a:
+
+[  
+10282 \times 512 = 5,264,384 \text{ bytes}  
+]
+
+que corresponde a los bloques de datos más los bloques de indirección.
+
+---
+
+### 3. `sparse` (inodo 9844)
+
+```text
+Size: 5317632
+Blockcount: 6
+BLOCKS:
+(DIND):41735
+(IND):41736
+(5192):11337
+TOTAL: 3
+```
+
+- Tamaño lógico: **5 317 632 bytes (~5,1 MB)**.
+    
+- Solo ocupa **3 bloques físicos** (`TOTAL: 3`).
+    
+- Utiliza:
+    
+    - Un bloque de **indirección doble** (`DIND`).
+        
+    - Un bloque de **indirección simple** (`IND`).
+        
+    - Un único bloque de datos real (`(5192):11337`).
+        
+
+Esto demuestra que `sparse` es un **archivo disperso (sparse file)**: aunque su tamaño lógico es grande, la mayoría de los bloques son huecos que no ocupan espacio físico en disco.
+
+El campo:
+
+```text
+Blockcount: 6
+```
+
+indica:
+
+[  
+6 \times 512 = 3072 \text{ bytes}  
+]
+
+que corresponden exactamente a los **3 bloques de 1 KB realmente asignados**.
+
+---
+
+### Conclusión
+
+- **`small.txt`**: fichero pequeño almacenado mediante **punteros directos**.
+    
+- **`big`**: fichero grande que requiere **punteros directos, indirectos simples e indirectos dobles**.
+    
+- **`sparse`**: fichero disperso que posee un gran tamaño lógico pero ocupa muy poco espacio físico, utilizando únicamente los bloques estrictamente necesarios para representar los datos reales.
+
+
+## CUESTIONES:
+Vamos a analizarlo paso a paso usando la información obtenida con `debugfs`.
+
+---
+
+# 1. Fichero `big`
+
+```text
+Size: 5242880 bytes
+TOTAL: 5141 bloques
+
+BLOCKS:
+(0-11):42497-42508,
+(IND):41714,
+(12-15):42509-42512,
+(16-63):785-832,
+(64-127):865-928,
+(128-255):1025-1152,
+(256-267):1281-1292,
+
+(DIND):41715,
+
+(IND):41716,(268-523):1293-1548,
+(IND):41717,(524-779):1549-1804,
+(IND):41718,(780-1023):1805-2048,
+
+(1024-1035):2561-2572,
+
+(IND):41719,(1036-1291):2573-2828,
+...
+(IND):41734,(4876-5119):6925-7168
+```
+
+---
+
+## a) Bloques directos usados
+
+Los primeros 12 bloques del fichero utilizan punteros directos:
+
+|Bloque lógico|Bloque físico|
+|---|---|
+|0|42497|
+|1|42498|
+|2|42499|
+|...|...|
+|11|42508|
+
+**Respuesta:** utiliza los **12 punteros directos** del inodo.
+
+---
+
+## b) Bloque donde se guarda el puntero indirecto (IND)
+
+Aparece:
+
+```text
+(IND):41714
+```
+
+Este bloque contiene la tabla de punteros indirectos simples.
+
+Como el tamaño de bloque es **1024 B** y cada puntero ocupa **4 bytes**:
+
+[  
+\frac{1024}{4}=256\text{ punteros}  
+]
+
+Por tanto puede direccionar **256 bloques de datos**.
+
+---
+
+### Bloques usados en el primer nivel de indirección (12–1035)
+
+Los bloques lógicos:
+
+```text
+12–267
+268–523
+524–779
+780–1035
+```
+
+Total:
+
+[  
+1035-12+1=1024\text{ bloques}  
+]
+
+Se usan:
+
+- 1 tabla IND → bloque 41714
+    
+- 4 tablas IND bajo DIND:
+    
+    - 41716
+        
+    - 41717
+        
+    - 41718
+        
+    - parte de 41719
+        
+
+---
+
+## c) Bloque donde se guarda el puntero doble indirecto (DIND)
+
+```text
+(DIND):41715
+```
+
+El bloque **41715** contiene punteros hacia bloques IND.
+
+---
+
+### ¿Cuántos bloques IND hay en la tabla DIND?
+
+Desde:
+
+```text
+41716 hasta 41734
+```
+
+Número total:
+
+[  
+41734-41716+1=19  
+]
+
+**Hay 19 bloques indirectos simples.**
+
+---
+
+### Bloques usados para los bloques restantes (1036–5119)
+
+Desde:
+
+```text
+1036–1291 → IND 41719
+1292–1547 → IND 41720
+...
+4876–5119 → IND 41734
+```
+
+Total:
+
+[  
+5119-1036+1=4084\text{ bloques de datos}  
+]
+
+Se necesitan:
+
+[  
+\lceil \frac{4084}{256}\rceil=16\text{ bloques IND}  
+]
+
+---
+
+## d) ¿Cuántos bloques consume en total?
+
+Debugfs indica:
+
+```text
+TOTAL: 5141
+```
+
+Por tanto:
+
+### Bloques de datos útiles
+
+El fichero mide:
+
+[  
+5242880/1024=5120\text{ bloques}  
+]
+
+### Bloques de metadatos
+
+Indirectos:
+
+- 1 IND simple → 41714
+    
+- 1 DIND → 41715
+    
+- 19 IND bajo DIND → 41716–41734
+    
+
+Total:
+
+[  
+1+1+19=21  
+]
+
+Total consumido:
+
+[  
+5120+21=5141  
+]
+
+✓ Coincide con debugfs.
+
+---
+
+## e) Esquema del fichero `big`
+
+```text
+INODO
+│
+├─ Directos (12)
+│   ├─ 42497
+│   ├─ ...
+│   └─ 42508
+│
+├─ IND → 41714
+│        │
+│        ├─ Datos 12–267
+│        └─ 256 punteros
+│
+└─ DIND → 41715
+         │
+         ├─ IND 41716 → Datos 268–523
+         ├─ IND 41717 → Datos 524–779
+         ├─ IND 41718 → Datos 780–1035
+         ├─ IND 41719 → Datos 1036–1291
+         ├─ ...
+         └─ IND 41734 → Datos 4876–5119
+```
+
+---
+
+# 2. Fichero `sparse`
+
+```text
+Size: 5317632
+Blockcount: 6
+
+BLOCKS:
+(DIND):41735
+(IND):41736
+(5192):11337
+
+TOTAL: 3
+```
+
+---
+
+## a) Bloques directos usados
+
+No aparece:
+
+```text
+(0):
+```
+
+Por tanto:
+
+**No hay punteros directos inicializados.**
+
+---
+
+## b) Bloque DIND
+
+```text
+(DIND):41735
+```
+
+---
+
+## c) Bloques IND
+
+Solo hay uno:
+
+```text
+(IND):41736
+```
+
+---
+
+## d) Bloques de datos
+
+Solo existe:
+
+```text
+(5192):11337
+```
+
+Es decir:
+
+- El bloque lógico **5192** contiene datos.
+    
+- Todos los bloques anteriores son huecos.
+    
+
+---
+
+## e) Bloques consumidos
+
+Debugfs indica:
+
+```text
+TOTAL: 3
+```
+
+Corresponden a:
+
+|Tipo|Bloques|
+|---|---|
+|DIND|1|
+|IND|1|
+|Datos|1|
+
+Total:
+
+[  
+1+1+1=3  
+]
+
+---
+
+# Comparación `big` vs `sparse`
+
+|Característica|big|sparse|
+|---|---|---|
+|Tamaño lógico|5 MB|5.1 MB|
+|Bloques de datos|5120|1|
+|Bloques totales|5141|3|
+|Directos usados|Sí (12)|No|
+|IND simple|Sí|Sí|
+|DIND|Sí|Sí|
+|Triple indirecto|No|No|
+|Espacios vacíos|No|Sí, casi todo|
+
+---
+
+## Diferencia principal
+
+- **`big`** tiene todos sus bloques realmente asignados.
+    
+- **`sparse`** solo reserva bloques para los datos escritos; los huecos se representan mediante punteros nulos.
+    
+
+Por ello, aunque ambos tienen un tamaño lógico similar (~5 MB), `big` ocupa **5141 bloques**, mientras que `sparse` solo consume **3 bloques físicos**.
