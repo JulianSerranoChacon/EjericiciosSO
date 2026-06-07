@@ -32,6 +32,6 @@ int main() {
     printf("UID: %d\n", uid);
     printf("GID: %d\n", gid);
     printf("Directorio actual: %s\n", cwd);
-
+    
     return 0;
 }
