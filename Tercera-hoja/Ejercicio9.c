@@ -13,7 +13,7 @@ int main(int argc, char* argv[]){
         exit(EXIT_FAILURE);
     }
 
-     pid_t pid = fork();
+    pid_t pid = fork();
 
     if (pid < 0) {
         perror("fork");
@@ -25,7 +25,7 @@ int main(int argc, char* argv[]){
 
         // Si execvp falla
         perror("execvp");
-        exit(EXIT_FAILURE);
+        _exit(EXIT_FAILURE);
 
         /*OTRA POSIBLE SOLUCION
                 //===== PROCESO HIJO =====

@@ -1044,3 +1044,418 @@ pkill -SIGINT Ejericicio5.exe
 
 ---
 
+#### 💻Ejercicio 9 Escribir un programa que ejecute otro programa (ejecutable y argumentos) que se pasará como argumento. El programa creará un proceso hijo que ejecutará el programa dado en el argumento con la función execvp(3). El proceso padre esperará que termine el hijo e imprimirá su código de salida. Ejemplos de ejecución:
+
+``` bash
+$ ./eje9 cat /etc/passwd
+
+root:x:0:0:root:/root:/bin/bash
+
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+
+…
+
+El proceso hijo terminó con código de salida 0
+
+$ ./eje9 cat /etc/shadow
+
+cat: /etc/shadow: Permission denied
+
+El proceso hijo terminó con código de salida 1
+
+  
+
+$ (./eje9 sleep 3600&) ; sleep 1 ; pkill -SIGKILL sleep
+
+El proceso hijo terminó por señal 9
+```
+
+>Nota: Considerar cómo deben pasarse los argumentos en cada caso para que sea sencilla la implementación. Por ejemplo: ¿qué diferencia hay entre: ./eje9 ps -el y ./eje9 "ps -el"?
+
+Respuesta:
+
+``` C
+#define _POSIX_C_SOURCE 200809L
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+
+int main(int argc, char* argv[]){
+
+     if (argc < 2) {
+        fprintf(stderr, "Uso: %s <programa> [argumentos...]\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    }
+    else if(pid == 0){
+        // PROCESO HIJO
+        execvp(argv[1], &argv[1]);
+
+        // Si execvp falla
+        perror("execvp");
+        _exit(EXIT_FAILURE);
+
+        /*OTRA POSIBLE SOLUCION
+                //===== PROCESO HIJO =====
+
+        /*Creamos un nuevo vector de argumentos:
+           - descartamos argv[0]
+           - argv[1] pasa a ser args[0]/*
+        
+        int n = argc - 1;
+        char *args[n + 1];
+
+        for (int i = 0; i < n; i++) {
+            args[i] = argv[i + 1];
+        }
+        args[n] = NULL;
+
+        execvp(args[0], args);
+
+        /* Solo se llega aquí si execvp falla
+        perror("execvp");
+        exit(EXIT_FAILURE);*/
+    }
+    else{
+        int status;
+        waitpid(pid, &status, 0);
+
+        if (WIFEXITED(status)) {
+            printf("El proceso hijo terminó con código de salida %d\n",
+                   WEXITSTATUS(status));
+        } else if (WIFSIGNALED(status)) {
+            printf("El proceso hijo terminó por señal %d\n",
+                   WTERMSIG(status));
+        }
+    }
+    return 0;
+}
+```
+
+
+Se debe ejecutar el programa como:
+
+```
+./eje9 programa [argumentos...]
+```
+
+porque `execvp(argv[1], &argv[1])` reutiliza directamente el vector de argumentos del programa actual a partir de `argv[1]`.
+
+Por ejemplo:
+
+```
+./eje9 ps -el
+```
+
+produce:
+
+```
+execvp("ps", {"ps", "-el", NULL});
+```
+
+mientras que:
+
+```
+./eje9 "ps -el"
+```
+
+genera:
+
+```
+execvp("ps -el", {"ps -el", NULL});
+```
+
+intentando ejecutar un programa llamado `"ps -el"`, lo que provoca un error al no existir dicho ejecutable.
+
+
+ADEMAS
+
+Exacto. **Si `execvp()` tiene éxito, nunca se ejecutan las líneas que vienen después.**
+
+Esto es porque `execvp()` **reemplaza completamente la imagen del proceso actual** por el nuevo programa.
+
+Por ejemplo:
+
+```c
+pid_t pid = fork();
+
+if (pid == 0) {  // Hijo
+    printf("Antes del exec\n");
+
+    execvp(argv[1], &argv[1]);
+
+    perror("execvp");
+    _exit(EXIT_FAILURE);
+
+    printf("Esto nunca se ejecuta\n");
+}
+```
+
+### Caso 1: `execvp()` tiene éxito
+
+Si ejecutas:
+
+```bash
+./eje9 ls
+```
+
+el flujo es:
+
+```text
+Hijo
+ ↓
+printf("Antes del exec")
+ ↓
+execvp("ls", ...)
+ ↓
+El proceso se convierte en "ls"
+ ↓
+Se ejecuta ls
+ ↓
+ls termina
+```
+
+Las líneas:
+
+```c
+perror("execvp");
+_exit(EXIT_FAILURE);
+printf("Esto nunca se ejecuta");
+```
+
+**NO se ejecutan nunca**.
+
+---
+
+### Caso 2: `execvp()` falla
+
+Por ejemplo:
+
+```bash
+./eje9 programa_que_no_existe
+```
+
+Flujo:
+
+```text
+Hijo
+ ↓
+printf("Antes del exec")
+ ↓
+execvp(...) falla
+ ↓
+retorna -1
+ ↓
+perror("execvp")
+ ↓
+_exit(EXIT_FAILURE)
+```
+
+Aquí sí se ejecuta el código posterior porque `execvp()` **solo retorna cuando ocurre un error**.
+
+---
+
+Por eso es tan común ver este patrón:
+
+```c
+execvp(argv[1], &argv[1]);
+
+perror("execvp");  // Solo si execvp falla
+_exit(EXIT_FAILURE);
+```
+
+Se interpreta como:
+
+> "Intenta ejecutar este programa. Si vuelves aquí, es que ha habido un error."
+
+De hecho, el manual (`man 3 exec`) dice:
+
+> The `exec()` functions return only if an error has occurred.
+
+Es decir:
+
+- ✅ Éxito → **no vuelve nunca**.
+    
+- ❌ Error → devuelve `-1` y establece `errno`.
+
+![[Pasted image 20260607234624.png]]
+
+![[Pasted image 20260607234644.png]]
+
+![[Pasted image 20260607234702.png]]
+
+---
+
+#### Ejercicio 10  Dibuja el esquema jerárquico de los procesos creados en la ejecución del siguiente programa con argc=3:
+
+``` C
+void main(int argc, char *argv[])
+
+{
+
+    int i;
+
+    for(i=1; i<=argc; i++)
+
+    {
+
+        pid_t pid = fork();
+
+        ...
+
+    }
+
+    return 0;
+
+}
+```
+
+
+Respuesta:
+
+``` C
+#include <unistd.h>
+#include <sys/types.h>
+#include <stdio.h>
+#include <sys/wait.h>
+
+int main(int argc, char *argv[])
+{
+    int i;
+
+    for(i=1; i<=argc; i++)
+    {
+        pid_t pid = fork();
+    }
+
+
+    printf("[padre]: %i     [pid]:%i \n",getppid(),getpid());
+
+    return 0;
+}
+}
+```
+
+Como has ejecutado:
+
+```bash
+./Ejercicio10.exe 1 2 3
+```
+
+entonces:
+
+```text
+argc = 4
+```
+
+porque:
+
+- `argv[0] = "./Ejercicio10.exe"`
+    
+- `argv[1] = "1"`
+    
+- `argv[2] = "2"`
+    
+- `argv[3] = "3"`
+    
+
+El bucle:
+
+```c
+for(i = 1; i <= argc; i++)
+```
+
+se ejecuta **4 veces** (`i = 1, 2, 3, 4`).
+
+Cada llamada a `fork()` duplica el número de procesos existentes, por lo que el número total de procesos creados es:
+
+```text
+1 → 2 → 4 → 8 → 16
+```
+
+Por ello, la salida muestra **16 procesos distintos**, que es exactamente lo esperado.
+
+El esquema jerárquico de los procesos generados sería:
+
+```text
+P0
+├─ P1
+│  ├─ P3
+│  │  ├─ P7
+│  │  │  └─ P15
+│  │  └─ P11
+│  ├─ P5
+│  │  └─ P13
+│  └─ P9
+├─ P2
+│  ├─ P6
+│  │  └─ P14
+│  ├─ P10
+│  └─ P12
+├─ P4
+│  └─ P8
+└─ P16
+```
+
+Usando los PID obtenidos en tu ejecución, el árbol aproximado es:
+
+```text
+6194
+├─ 6195
+│  ├─ 6198
+│  │  ├─ 6204
+│  │  │  └─ 6209
+│  │  └─ 6207
+│  ├─ 6201
+│  └─ 6206
+├─ 6196
+│  ├─ 6199
+│  ├─ 6203
+│  └─ 6208
+├─ 6197
+│  └─ 6200
+├─ 6202
+└─ 6205
+```
+
+Los procesos cuyo **PPID es 828**:
+
+```text
+6202
+6205
+6208
+```
+
+aparecen porque sus padres terminaron antes que ellos y fueron **adoptados por `systemd`** (PID 828 en tu sistema), convirtiéndose temporalmente en **procesos huérfanos**.
+
+### Respuesta para entregar
+
+> Al ejecutar el programa con:
+> 
+> ```bash
+> ./Ejercicio10.exe 1 2 3
+> ```
+> 
+> el valor de `argc` es 4, ya que incluye el nombre del programa (`argv[0]`). Por tanto, el bucle `for(i=1; i<=argc; i++)` realiza 4 llamadas a `fork()`.
+> 
+> Cada llamada a `fork()` duplica el número de procesos existentes, por lo que el número total de procesos generados es:
+> 
+> ```text
+> 2⁴ = 16 procesos
+> ```
+> 
+> El esquema jerárquico de creación de procesos corresponde a un árbol binario de profundidad 4. Algunos procesos muestran como padre al proceso `systemd` (PID 828) debido a que sus procesos padres finalizaron antes de que ellos imprimieran su información, siendo adoptados temporalmente por `systemd`.
+
+![[Pasted image 20260608000644.png]]
+
+---
+
