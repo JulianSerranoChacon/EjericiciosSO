@@ -1981,3 +1981,1247 @@ Total:
     
 
 Por ello, aunque ambos tienen un tamaño lógico similar (~5 MB), `big` ocupa **5141 bloques**, mientras que `sparse` solo consume **3 bloques físicos**.
+
+---
+
+#### Ejercicio 14. Las entradas de directorio en un sistema de ficheros ext2 incluyen: el número de inodo (32 bits), la longitud del nombre  y el nombre del archivo, que puede tener un máximo de 256 caracteres. ¿Cuántas entradas de directorio se pueden almacenar en un bloque de disco de 4 KB?
+
+Respuesta:
+
+Las entradas de directorio en un sistema de ficheros **ext2** incluyen:
+
+- Número de inodo: **32 bits = 4 bytes**
+- Longitud total de la entrada (`rec_len`): **16 bits = 2 bytes**
+- Longitud del nombre (`name_len`): **8 bits = 1 byte**
+- Tipo de fichero (`file_type`): **8 bits = 1 byte**
+- Nombre del archivo: máximo **256 caracteres = 256 bytes**
+
+Por tanto, el tamaño máximo de una entrada de directorio es:
+
+$$
+4 + 2 + 1 + 1 + 256 = 264\ \text{bytes}
+$$
+
+Un bloque de disco tiene un tamaño de **4 KB**:
+
+$$
+4\ \text{KB} = 4096\ \text{bytes}
+$$
+
+El número máximo de entradas que pueden almacenarse en un bloque es:
+
+$$
+\left\lfloor \frac{4096}{264} \right\rfloor = 15
+$$
+
+Comprobación:
+
+$$
+15 \times 264 = 3960\ \text{bytes}
+$$
+
+$$
+16 \times 264 = 4224\ \text{bytes} > 4096\ \text{bytes}
+$$
+
+Por tanto, **en un bloque de 4 KB se pueden almacenar como máximo 15 entradas de directorio**, suponiendo que todos los nombres de archivo tienen la longitud máxima de **256 caracteres**.
+
+> **Nota:** En la práctica suelen almacenarse más entradas, ya que la mayoría de los nombres son más cortos y las entradas de directorio en ext2 tienen longitud variable.
+
+---
+
+
+Ejercicio 15. Considere un sistema de ficheros con los siguientes contenidos de inodos y bloques de disco.
+
+|         |     |     |         |     |     |         |     |     |         |     |     |         |     |
+| ------- | --- | --- | ------- | --- | --- | ------- | --- | --- | ------- | --- | --- | ------- | --- |
+| inodo   | 2   |     | inodo   | 3   |     | inodo   | 4   |     | inodo   | 5   |     | inodo   | 9   |
+| Enlaces |     |     | Enlaces |     |     | Enlaces |     |     | Enlaces |     |     | Enlaces |     |
+| Tipo    | D   |     | Tipo    | F   |     | Tipo    | F   |     | Tipo    | D   |     | Tipo    | D   |
+| Bloque  |     |     | Bloque  | 6   |     | Bloque  | 12  |     | Bloque  | 0   |     | Bloque  |     |
+
+  
+  
+
+|        |     |     |        |     |     |        |     |
+| ------ | --- | --- | ------ | --- | --- | ------ | --- |
+| Bloque | 0   |     | Bloque | 3   |     | Bloque | 5   |
+| .      | 5   |     | .      | 2   |     | .      | 9   |
+| ..     | 2   |     | ..     |     |     | ..     | 5   |
+| C      | 9   |     | A      | 3   |     |        |     |
+| D      | 4   |     | B      | 5   |     |        |     |
+|        |     |     | E      | 4   |     |        |     |
+
+1. Rellene los huecos para que el sistema sea consistente.
+    
+2. Dibuje de forma esquemática  el árbol del directorio empleando.
+
+Respuesta:
+
+
+|         |     |     |         |     |     |         |     |     |         |     |     |         |     |
+| ------- | --- | --- | ------- | --- | --- | ------- | --- | --- | ------- | --- | --- | ------- | --- |
+| inodo   | 2   |     | inodo   | 3   |     | inodo   | 4   |     | inodo   | 5   |     | inodo   | 9   |
+| Enlaces | 3   |     | Enlaces | 1   |     | Enlaces | 2   |     | Enlaces | 3   |     | Enlaces | 2   |
+| Tipo    | D   |     | Tipo    | F   |     | Tipo    | F   |     | Tipo    | D   |     | Tipo    | D   |
+| Bloque  | 3   |     | Bloque  | 6   |     | Bloque  | 12  |     | Bloque  | 0   |     | Bloque  | 5   |
+
+  
+  
+
+|        |     |     |        |     |     |        |     |
+| ------ | --- | --- | ------ | --- | --- | ------ | --- |
+| Bloque | 0   |     | Bloque | 3   |     | Bloque | 5   |
+| .      | 5   |     | .      | 2   |     | .      | 9   |
+| ..     | 2   |     | ..     | 2   |     | ..     | 5   |
+| C      | 9   |     | A      | 3   |     |        |     |
+| D      | 4   |     | B      | 5   |     |        |     |
+|        |     |     | E      | 4   |     |        |     |
+
+## 1. Completar los huecos para que el sistema sea consistente
+
+### Inodos
+
+|Inodo|Enlaces|Tipo|Bloque|
+|---|---|---|---|
+|2|**3**|D|**3**|
+|3|**1**|F|6|
+|4|**2**|F|12|
+|5|**3**|D|0|
+|9|**2**|D|**5**|
+
+---
+
+### Bloques de directorio
+
+#### Bloque 0 (corresponde al inodo 5)
+
+|Entrada|Inodo|
+|---|---|
+|.|5|
+|..|2|
+|C|9|
+|D|4|
+
+---
+
+#### Bloque 3 (corresponde al inodo 2)
+
+|Entrada|Inodo|
+|---|---|
+|.|2|
+|..|**2**|
+|A|3|
+|B|5|
+|E|4|
+
+Como el inodo 2 es el **directorio raíz**, la entrada `..` apunta a sí mismo.
+
+---
+
+#### Bloque 5 (corresponde al inodo 9)
+
+|Entrada|Inodo|
+|---|---|
+|.|9|
+|..|5|
+
+---
+
+## 2. Cálculo del número de enlaces
+
+### Inodo 2 (directorio raíz)
+
+Contiene el subdirectorio:
+
+- `B → inodo 5`
+    
+
+Por tanto:
+
+- `.` → 1 enlace
+    
+- `..` → 1 enlace (al ser raíz apunta a sí mismo)
+    
+- Subdirectorio `B` → añade 1 enlace
+    
+
+Total:
+
+$$  
+2 + 1 = 3  
+$$
+
+---
+
+### Inodo 3 (fichero)
+
+Solo aparece en:
+
+```text
+A → 3
+```
+
+Total:
+
+$$  
+1  
+$$
+
+---
+
+### Inodo 4 (fichero)
+
+Aparece dos veces:
+
+```text
+D → 4
+E → 4
+```
+
+Es un **hard link**.
+
+Total:
+
+$$  
+2  
+$$
+
+---
+
+### Inodo 5 (directorio)
+
+Tiene:
+
+- `.` y `..`
+    
+- Un subdirectorio:
+    
+
+```text
+C → 9
+```
+
+Total:
+
+$$  
+2 + 1 = 3  
+$$
+
+---
+
+### Inodo 9 (directorio)
+
+No tiene subdirectorios.
+
+Solo:
+
+- `.`
+    
+- `..`
+    
+
+Total:
+
+$$  
+2  
+$$
+
+---
+
+## 3. Árbol de directorios
+
+El directorio raíz es el **inodo 2**:
+
+```text
+/ (inodo 2)
+├── A  (inodo 3) [fichero]
+├── E  (inodo 4) [fichero]
+└── B/ (inodo 5)
+    ├── D  (inodo 4) [fichero]
+    └── C/ (inodo 9)
+```
+
+Observaciones:
+
+- **D** y **E** apuntan al **mismo inodo 4**, por lo que son **enlaces duros (hard links)** al mismo fichero.
+    
+- El directorio raíz (`inodo 2`) contiene el directorio `B`.
+    
+- `B` contiene el directorio `C`.
+    
+- `C` es un directorio vacío (solo tiene `.` y `..`).
+    
+
+---
+
+### Estado final consistente
+
+|Inodo|Enlaces|Tipo|Bloque|
+|---|---|---|---|
+|2|3|D|3|
+|3|1|F|6|
+|4|2|F|12|
+|5|3|D|0|
+|9|2|D|5|
+
+y el árbol resultante es:
+
+```text
+/
+├── A
+├── E
+└── B
+    ├── D
+    └── C
+```
+
+donde **D y E son dos nombres distintos para el mismo fichero (inodo 4)**.
+
+```
+en el bloque 3 como van a ser . y .. el mismo 
+```
+
+Sí, **pueden ser el mismo**, pero **solo si el directorio es el directorio raíz (`/`)**.
+
+En cualquier directorio:
+
+- `.` apunta al propio directorio.
+    
+- `..` apunta al directorio padre.
+    
+
+Por ejemplo:
+
+```text
+/home/verxxuxz/Documentos
+```
+
+tendría:
+
+```text
+.  → Documentos
+.. → /home/verxxuxz
+```
+
+Sin embargo, en el **directorio raíz** no existe un directorio padre superior, por lo que:
+
+```text
+/ (raíz)
+.  → /
+.. → /
+```
+
+Es decir, ambos apuntan al mismo inodo.
+
+---
+
+En este ejercicio, el bloque 3 contiene:
+
+|Entrada|Inodo|
+|---|---|
+|.|2|
+|..|?|
+|A|3|
+|B|5|
+|E|4|
+
+Y sabemos que el bloque 0 (inodo 5) tiene:
+
+|Entrada|Inodo|
+|---|---|
+|.|5|
+|..|2|
+
+Esto significa que **el directorio 5 está contenido dentro del inodo 2**, ya que `..` del inodo 5 apunta al 2.
+
+Además, el bloque 5 (inodo 9) tiene:
+
+|Entrada|Inodo|
+|---|---|
+|.|9|
+|..|5|
+
+Por lo que el árbol es:
+
+```text
+inodo 2
+└── B (inodo 5)
+    └── C (inodo 9)
+```
+
+Como **ningún directorio apunta al inodo 2 como hijo**, la única posibilidad consistente es que el **inodo 2 sea la raíz**.
+
+Por tanto:
+
+|Entrada|Inodo|
+|---|---|
+|.|2|
+|..|2|
+
+es correcto.
+
+Si el ejercicio indicara que existe otro directorio padre para el inodo 2, entonces `..` debería apuntar a otro inodo distinto. Pero con los datos proporcionados, **el inodo 2 es la raíz y `.` y `..` deben ser ambos 2**.
+
+#### Ejercicio 16.  Un usuario desea dar formato a una partición de disco para almacenar su colección de fotografías. Cada fotografía se almacena en un fichero con un tamaño fijo de 7000 bytes. El sistema de ficheros usado tiene las siguientes características:
+
+- Bloques indexados con 2 enlaces directos y 1 indirecto simple por inodo. 
+    
+- 4 bytes para identificar un inodo
+    
+- Tamaño de puntero a bloque de 32 bits. 
+    
+
+El sistema de ficheros se puede formatear con  tres tamaños de bloque: 1024 bytes, 2048 bytes y 4096 bytes. Analiza las ventajas de cada tamaño contestando a las siguientes preguntas:
+
+-  ¿Cuál de las tres opciones presenta menos fragmentación interna? Para cada tamaño de bloque, indique el porcentaje de ocupación real de cada uno de los bloques de datos asignados a un fichero. 
+    
+- ¿Cuál de las tres opciones ofrece un mejor aprovechamiento de los bloques de disco disponibles? Para cada tamaño de bloque, indique qué porcentaje de bloques de disco se utilizarán para almacenar los datos de un determinado fichero.
+    
+- ¿Cuántos accesos a disco requerirá una lectura secuencial completa de una fotografía en cada caso?
+    
+- ¿Cómo afectarán a la selección de un tamaño de bloque determinado al tamaño de la tabla de inodos y al mapa de bits de bloques libres?
+
+Respuesta:
+
+## Ejercicio 16
+
+**Datos del problema:**
+
+- Tamaño de cada fotografía: **7000 bytes**
+- Cada inodo dispone de:
+  - **2 punteros directos**
+  - **1 puntero indirecto simple**
+- Tamaño del puntero a bloque: **32 bits = 4 bytes**
+- Tamaño del identificador de inodo: **4 bytes**
+- Tamaños de bloque posibles:
+  - 1024 bytes
+  - 2048 bytes
+  - 4096 bytes
+
+---
+
+## 1. Fragmentación interna
+
+La fragmentación interna corresponde al espacio desperdiciado en el último bloque del fichero.
+
+### Bloques de 1024 bytes
+
+Número de bloques de datos necesarios:
+
+$$
+\left\lceil \frac{7000}{1024} \right\rceil = 7 \text{ bloques}
+$$
+
+Espacio ocupado:
+
+$$
+6 \times 1024 = 6144 \text{ bytes}
+$$
+
+Último bloque:
+
+$$
+7000 - 6144 = 856 \text{ bytes}
+$$
+
+Ocupación del último bloque:
+
+$$
+\frac{856}{1024}\times 100 = 83.59\%
+$$
+
+Fragmentación interna:
+
+$$
+100 - 83.59 = 16.41\%
+$$
+
+**Porcentaje de ocupación de cada bloque:**
+
+| Bloque | Ocupación |
+|---------|------------|
+| 1–6 | 100 % |
+| 7 | 83.59 % |
+
+---
+
+### Bloques de 2048 bytes
+
+Número de bloques:
+
+$$
+\left\lceil \frac{7000}{2048} \right\rceil = 4 \text{ bloques}
+$$
+
+Espacio ocupado:
+
+$$
+3 \times 2048 = 6144 \text{ bytes}
+$$
+
+Último bloque:
+
+$$
+7000 - 6144 = 856 \text{ bytes}
+$$
+
+Ocupación del último bloque:
+
+$$
+\frac{856}{2048}\times 100 = 41.80\%
+$$
+
+Fragmentación interna:
+
+$$
+100 - 41.80 = 58.20\%
+$$
+
+**Porcentaje de ocupación:**
+
+| Bloque | Ocupación |
+|---------|------------|
+| 1–3 | 100 % |
+| 4 | 41.80 % |
+
+---
+
+### Bloques de 4096 bytes
+
+Número de bloques:
+
+$$
+\left\lceil \frac{7000}{4096} \right\rceil = 2 \text{ bloques}
+$$
+
+Espacio ocupado en el último bloque:
+
+$$
+7000 - 4096 = 2904 \text{ bytes}
+$$
+
+Ocupación del último bloque:
+
+$$
+\frac{2904}{4096}\times 100 = 70.90\%
+$$
+
+Fragmentación interna:
+
+$$
+100 - 70.90 = 29.10\%
+$$
+
+**Porcentaje de ocupación:**
+
+| Bloque | Ocupación |
+|---------|------------|
+| 1 | 100 % |
+| 2 | 70.90 % |
+
+---
+
+### Conclusión
+
+La opción con **menor fragmentación interna** es:
+
+| Tamaño de bloque | Fragmentación |
+|------------------|---------------|
+| 1024 B | **16.41 %** |
+| 2048 B | 58.20 % |
+| 4096 B | 29.10 % |
+
+Por tanto, **1024 bytes presenta la menor fragmentación interna**.
+
+---
+
+## 2. Aprovechamiento de bloques de disco
+
+Se consideran tanto los bloques de datos como los bloques indirectos.
+
+### Bloques de 1024 bytes
+
+Datos:
+
+- 7 bloques de datos.
+
+Los 2 punteros directos cubren:
+
+$$
+2 \text{ bloques}
+$$
+
+Puntero indirecto simple:
+
+Capacidad:
+
+$$
+\frac{1024}{4} = 256 \text{ punteros}
+$$
+
+Se necesita un bloque indirecto para los 5 bloques restantes.
+
+Bloques totales consumidos:
+
+$$
+7 + 1 = 8
+$$
+
+Porcentaje útil:
+
+$$
+\frac{7}{8}\times100 = 87.5\%
+$$
+
+---
+
+### Bloques de 2048 bytes
+
+Datos:
+
+$$
+4 \text{ bloques}
+$$
+
+Directos:
+
+$$
+2 \text{ bloques}
+$$
+
+Indirectos:
+
+Se necesita un bloque indirecto para 2 bloques.
+
+Bloques totales:
+
+$$
+4 + 1 = 5
+$$
+
+Porcentaje útil:
+
+$$
+\frac{4}{5}\times100 = 80\%
+$$
+
+---
+
+### Bloques de 4096 bytes
+
+Datos:
+
+$$
+2 \text{ bloques}
+$$
+
+Los 2 punteros directos son suficientes.
+
+No se necesita indirección.
+
+Bloques totales:
+
+$$
+2
+$$
+
+Porcentaje útil:
+
+$$
+\frac{2}{2}\times100 = 100\%
+$$
+
+---
+
+### Conclusión
+
+| Tamaño de bloque | Bloques de datos | Bloques indirectos | Total | Aprovechamiento |
+|------------------|------------------|--------------------|--------|------------------|
+| 1024 B | 7 | 1 | 8 | 87.5 % |
+| 2048 B | 4 | 1 | 5 | 80 % |
+| 4096 B | 2 | 0 | 2 | **100 %** |
+
+El mejor aprovechamiento lo ofrece **4096 bytes**.
+
+---
+
+## 3. Accesos a disco para lectura secuencial completa
+
+Suponiendo que es necesario leer el inodo inicialmente.
+
+### Bloques de 1024 bytes
+
+- 1 acceso al inodo
+- 1 acceso al bloque indirecto
+- 7 accesos a bloques de datos
+
+Total:
+
+$$
+1 + 1 + 7 = 9
+$$
+
+---
+
+### Bloques de 2048 bytes
+
+- 1 acceso al inodo
+- 1 acceso al bloque indirecto
+- 4 accesos a datos
+
+Total:
+
+$$
+1 + 1 + 4 = 6
+$$
+
+---
+
+### Bloques de 4096 bytes
+
+- 1 acceso al inodo
+- 2 accesos a datos
+
+Total:
+
+$$
+1 + 2 = 3
+$$
+
+---
+
+### Conclusión
+
+| Tamaño de bloque | Accesos |
+|------------------|----------|
+| 1024 B | 9 |
+| 2048 B | 6 |
+| 4096 B | **3** |
+
+Los bloques de **4096 bytes requieren menos accesos a disco**.
+
+---
+
+## 4. Influencia sobre la tabla de inodos y el mapa de bits
+
+### Tabla de inodos
+
+El tamaño de bloque **no afecta al tamaño individual del inodo**, pero sí al número total de inodos que pueden almacenarse en cada bloque de la tabla.
+
+Con bloques mayores:
+
+- Se almacenan más inodos por bloque.
+- Se necesitan menos accesos para consultar la tabla.
+
+---
+
+### Mapa de bits de bloques libres
+
+El tamaño del bitmap depende del número de bloques del sistema de ficheros.
+
+Con bloques más grandes:
+
+- Se necesitan menos bloques para almacenar la misma cantidad de datos.
+- El bitmap será más pequeño.
+
+Con bloques más pequeños:
+
+- Habrá más bloques en el disco.
+- El bitmap será más grande.
+
+---
+
+## Conclusiones finales
+
+- **Menor fragmentación interna:** bloques de **1024 bytes**.
+- **Mejor aprovechamiento de bloques:** bloques de **4096 bytes**.
+- **Menor número de accesos a disco:** bloques de **4096 bytes**.
+- **Bitmap más pequeño:** bloques de **4096 bytes**.
+
+Por tanto, existe un compromiso entre minimizar la fragmentación interna (**1024 B**) y maximizar el rendimiento y reducir metadatos (**4096 B**).
+
+
+--- 
+
+#### Ejercicio 17. Un sistema de ficheros UNIX tiene las siguientes características:
+
+- Bloques de 512 bytes y direcciones de bloque de disco de 16 bits.
+    
+- Bloques indexados con 10 punteros directos a bloque,  1 puntero indirecto simple y 1 puntero indirecto doble.
+    
+
+ Conteste de manera razonada a las siguientes cuestiones:
+
+- ¿Cuál es el tamaño máximo de un fichero en este sistema? 
+    
+- Un programa UNIX crea un fichero en este sistema e inmediatamente después escribe un byte de datos en la posición 1.000 y otro en la posición 10.000. ¿Cuántos bloques del disco
+
+
+
+Respuesta:
+
+**Datos del problema:**
+
+- Tamaño de bloque: **512 bytes**
+- Direcciones de bloque: **16 bits = 2 bytes**
+- Cada inodo contiene:
+  - **10 punteros directos**
+  - **1 puntero indirecto simple**
+  - **1 puntero indirecto doble**
+
+---
+
+## 1. Tamaño máximo de un fichero
+
+### Bloques direccionables mediante punteros directos
+
+El inodo contiene **10 punteros directos**, por lo que puede direccionar:
+
+$$
+10 \text{ bloques}
+$$
+
+Espacio direccionado:
+
+$$
+10 \times 512 = 5120 \text{ bytes}
+$$
+
+---
+
+### Bloques direccionables mediante el puntero indirecto simple
+
+Cada bloque indirecto ocupa 512 bytes.
+
+Cada dirección ocupa:
+
+$$
+16 \text{ bits} = 2 \text{ bytes}
+$$
+
+Número de punteros que caben en un bloque indirecto:
+
+$$
+\frac{512}{2} = 256 \text{ punteros}
+$$
+
+Por tanto, el puntero indirecto simple puede direccionar:
+
+$$
+256 \text{ bloques}
+$$
+
+Espacio direccionado:
+
+$$
+256 \times 512 = 131072 \text{ bytes}
+$$
+
+---
+
+### Bloques direccionables mediante el puntero indirecto doble
+
+El bloque indirecto doble contiene:
+
+$$
+256 \text{ punteros}
+$$
+
+Cada uno apunta a un bloque indirecto simple con otros:
+
+$$
+256 \text{ punteros}
+$$
+
+Por tanto, puede direccionar:
+
+$$
+256 \times 256 = 65536 \text{ bloques}
+$$
+
+Espacio direccionado:
+
+$$
+65536 \times 512 = 33554432 \text{ bytes}
+$$
+
+---
+
+### Tamaño máximo del fichero
+
+Número total de bloques de datos:
+
+$$
+10 + 256 + 65536 = 65802 \text{ bloques}
+$$
+
+Tamaño máximo:
+
+$$
+65802 \times 512 = 33690624 \text{ bytes}
+$$
+
+Equivale aproximadamente a:
+
+$$
+\frac{33690624}{1024^2} = 32.13 \text{ MB}
+$$
+
+**El tamaño máximo de un fichero es:**
+
+$$
+\boxed{33\,690\,624\ \text{bytes} \approx 32.13\ \text{MB}}
+$$
+
+---
+
+## 2. Escritura de un byte en las posiciones 1000 y 10000
+
+Se crea un fichero vacío y se escribe:
+
+- Un byte en la posición **1000**.
+- Un byte en la posición **10000**.
+
+Debemos determinar cuántos bloques de disco se asignan.
+
+---
+
+### Posición 1000
+
+Bloque lógico correspondiente:
+
+$$
+\left\lfloor \frac{1000}{512} \right\rfloor = 1
+$$
+
+Es decir, corresponde al **segundo bloque de datos**.
+
+Como el inodo dispone de 10 punteros directos, este bloque se almacena mediante un puntero directo.
+
+Bloques necesarios:
+
+- 1 bloque de datos.
+
+---
+
+### Posición 10000
+
+Bloque lógico correspondiente:
+
+$$
+\left\lfloor \frac{10000}{512} \right\rfloor = 19
+$$
+
+El bloque lógico 19 corresponde al vigésimo bloque del fichero.
+
+Los bloques:
+
+- 0–9 → punteros directos.
+- 10–265 → puntero indirecto simple.
+
+Por tanto, el bloque lógico 19 se direcciona mediante el **puntero indirecto simple**.
+
+Para ello se necesitan:
+
+- 1 bloque indirecto simple.
+- 1 bloque de datos.
+
+---
+
+### Bloques totales asignados
+
+#### Bloques de datos
+
+- Bloque lógico 1.
+- Bloque lógico 19.
+
+Total:
+
+$$
+2 \text{ bloques de datos}
+$$
+
+#### Bloques de metadatos
+
+- 1 bloque indirecto simple.
+
+Total:
+
+$$
+1 \text{ bloque}
+$$
+
+---
+
+### Resultado final
+
+El sistema asignará:
+
+| Tipo de bloque | Cantidad |
+|----------------|-----------|
+| Bloques de datos | 2 |
+| Bloques indirectos | 1 |
+| **Total** | **3 bloques** |
+
+Por tanto, el programa provocará la asignación de:
+
+$$
+\boxed{3\ \text{bloques de disco}}
+$$
+
+---
+
+### Esquema del fichero
+
+```text
+INODO
+├── Directo[0] → vacío
+├── Directo[1] → bloque de datos (posición 1000)
+├── Directo[2-9] → vacíos
+├── Indirecto simple
+│     └── Entrada 9 → bloque de datos (posición 10000)
+└── Indirecto doble → vacío
+```
+
+Obsérvese que los bloques intermedios no se asignan físicamente, por lo que el fichero resultante es un **fichero disperso (sparse file)**.
+
+--- 
+
+#### Ejercicio 18.  Describe detalladamente qué operaciones relativas al sistema de ficheros realiza el sistema operativo al ejecutar leer los contenidos de /home/ubuntu/.bashrc en un sistema de ficheros tipo ext con tamaño de bloque de 4K. Suponer que el nodo-i del directorio raíz está ya en memoria y que el resto de las cachés del VFS están vacías.
+
+
+respuesta:
+
+## Ejercicio 18
+
+Se desea leer el contenido del fichero:
+
+```text
+/home/ubuntu/.bashrc
+```
+
+en un sistema de ficheros **ext** con tamaño de bloque de **4 KB**.
+
+Se supone que:
+
+- El **nodo-i del directorio raíz (`/`) ya está cargado en memoria**.
+- **Todas las cachés del VFS (Virtual File System) están vacías**, excepto dicho nodo-i.
+
+---
+
+## 1. Resolución de la ruta (`pathname resolution`)
+
+Para acceder al fichero `/home/ubuntu/.bashrc`, el sistema operativo debe recorrer secuencialmente cada componente de la ruta:
+
+```text
+/
+└── home
+    └── ubuntu
+        └── .bashrc
+```
+
+El VFS utiliza el nodo-i del directorio actual para localizar la entrada correspondiente al siguiente componente del camino.
+
+---
+
+## 2. Acceso al directorio raíz (`/`)
+
+El nodo-i del directorio raíz **ya se encuentra en memoria**, por lo que no es necesario leerlo desde disco.
+
+Sin embargo, como la caché de dentries está vacía, el sistema debe:
+
+1. Localizar los bloques de datos asociados al directorio raíz utilizando su nodo-i.
+2. Leer del disco los bloques que contienen las entradas del directorio.
+3. Buscar la entrada:
+
+```text
+home
+```
+
+4. Obtener el número de nodo-i asociado al directorio `home`.
+5. Crear en la caché VFS una entrada (`dentry`) para:
+
+```text
+/ → home
+```
+
+---
+
+## 3. Carga del nodo-i de `/home`
+
+Como la caché de inodos está vacía, el sistema debe:
+
+1. Determinar en qué grupo de bloques se encuentra el nodo-i de `home`.
+2. Acceder a la tabla de inodos correspondiente.
+3. Leer desde disco el nodo-i de `home`.
+4. Insertarlo en la caché de inodos del VFS.
+
+---
+
+## 4. Búsqueda de `ubuntu` dentro de `/home`
+
+Con el nodo-i de `home` ya cargado:
+
+1. Se leen los bloques de datos del directorio `/home`.
+2. Se examinan las entradas del directorio hasta encontrar:
+
+```text
+ubuntu
+```
+
+3. Se obtiene el número de nodo-i correspondiente.
+4. Se almacena la nueva dentry en la caché.
+
+---
+
+## 5. Carga del nodo-i de `/home/ubuntu`
+
+El sistema:
+
+1. Lee desde la tabla de inodos el nodo-i de `ubuntu`.
+2. Lo incorpora a la caché de inodos.
+
+---
+
+## 6. Búsqueda del fichero `.bashrc`
+
+Usando el nodo-i del directorio `/home/ubuntu`:
+
+1. Se leen los bloques del directorio.
+2. Se busca la entrada:
+
+```text
+.bashrc
+```
+
+3. Se obtiene el número de nodo-i asociado al fichero.
+4. Se crea la correspondiente entrada en la caché de dentries.
+
+---
+
+## 7. Carga del nodo-i de `.bashrc`
+
+El sistema:
+
+1. Localiza el nodo-i del fichero en la tabla de inodos.
+2. Lo lee desde disco.
+3. Lo almacena en la caché de inodos.
+
+El nodo-i contiene:
+
+- Permisos del fichero.
+- Propietario y grupo.
+- Tamaño del fichero.
+- Fechas de acceso/modificación.
+- Direcciones de los bloques de datos.
+
+---
+
+## 8. Comprobación de permisos
+
+Antes de realizar la lectura, el kernel verifica que el proceso tiene permisos suficientes para acceder al fichero:
+
+- Permiso de ejecución (`x`) sobre los directorios:
+
+```text
+/
+/home
+/home/ubuntu
+```
+
+- Permiso de lectura (`r`) sobre:
+
+```text
+.bashrc
+```
+
+Si la comprobación falla, se devuelve un error:
+
+```text
+EACCES
+```
+
+---
+
+## 9. Apertura del fichero (`open()`)
+
+Si los permisos son correctos:
+
+1. Se crea una estructura `file` en memoria.
+2. Se inicializa el desplazamiento (`offset`) a cero.
+3. Se asocia dicha estructura al descriptor de fichero devuelto al proceso.
+
+---
+
+## 10. Lectura del contenido (`read()`)
+
+Para satisfacer la llamada a lectura:
+
+1. Se determinan los bloques de datos necesarios a partir del nodo-i.
+2. Como la caché de páginas está vacía, los bloques deben leerse desde disco.
+3. Cada bloque leído se almacena en la **page cache**.
+4. Los datos solicitados se copian desde la page cache al espacio de usuario.
+
+---
+
+## 11. Actualización del tiempo de acceso
+
+Tras la lectura, el sistema puede actualizar el campo:
+
+```text
+atime
+```
+
+del nodo-i del fichero.
+
+Dependiendo de la política de montaje (`relatime`, `noatime`, etc.), esta actualización puede:
+
+- Realizarse inmediatamente.
+- Diferirse.
+- Omitirse.
+
+---
+
+## 12. Estado final de las cachés
+
+Después de completar la operación, el VFS contendrá:
+
+### Caché de inodos
+
+- Nodo-i de `/`
+- Nodo-i de `/home`
+- Nodo-i de `/home/ubuntu`
+- Nodo-i de `.bashrc`
+
+### Caché de dentries
+
+```text
+/ → home
+/home → ubuntu
+/home/ubuntu → .bashrc
+```
+
+### Page cache
+
+- Los bloques de datos leídos de `.bashrc`.
+- Posiblemente algunos bloques de los directorios recorridos.
+
+---
+
+## Resumen de accesos al sistema de ficheros
+
+1. Usar el nodo-i raíz ya presente en memoria.
+2. Leer el directorio `/` para localizar `home`.
+3. Leer el nodo-i de `home`.
+4. Leer el directorio `/home` para localizar `ubuntu`.
+5. Leer el nodo-i de `ubuntu`.
+6. Leer el directorio `/home/ubuntu` para localizar `.bashrc`.
+7. Leer el nodo-i de `.bashrc`.
+8. Verificar permisos.
+9. Crear la estructura `file`.
+10. Leer los bloques de datos del fichero.
+11. Actualizar `atime` si procede.
+12. Almacenar la información obtenida en las distintas cachés del VFS.
+
+En consecuencia, aunque el nodo-i raíz ya estuviese en memoria, la primera lectura del fichero requiere recorrer toda la jerarquía de directorios y cargar en memoria los inodos, dentries y bloques de datos necesarios.
