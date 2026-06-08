@@ -1461,3 +1461,169 @@ aparecen porque sus padres terminaron antes que ellos y fueron **adoptados por `
 
 ---
 
+#### 💻 Ejercicio 11 Escribir un programa que genere un fichero con 5 procesos concurrentes con la siguiente estructura:
+
+El proceso padre creará el fichero de salida `output.txt` y escribirá el primer segmento de 5 ceros (`00000`). A continuación creará 5 hijos y esperará a que termine cada uno mostrando el PID y número de hijo. Cada hijo realiza las siguientes acciones:
+
+- Abrirá el archivo y desplazará el puntero de escritura el offset correspondiente.
+    
+- Escribirá la secuencia correspondiente (`11111`, `22222`...).
+    
+
+Ejemplo de ejecución:
+
+```bash
+$ ./eje10
+
+El proceso hijo 5 con PID 1890 terminó correctamente
+El proceso hijo 4 con PID 1889 terminó correctamente
+El proceso hijo 3 con PID 1888 terminó correctamente
+El proceso hijo 2 con PID 1887 terminó correctamente
+El proceso hijo 1 con PID 1886 terminó correctamente
+
+Escritura completada en output.txt
+
+$ cat output.txt
+000001111122222333334444455555
+```
+
+![Ejercicio 11](Imagenes/Pasted%20image%2020260608192241.png)
+
+---
+
+#### Ejercicio 12
+
+Considera el programa descrito en el Ejercicio 11. Dado que la tabla de descriptores se hereda ¿Es posible usar el descriptor de fichero abierto por el padre en los hijos?
+
+Sí, **es posible usar el descriptor de fichero abierto por el padre en los hijos**, porque tras un `fork()` los hijos **heredan una copia de la tabla de descriptores** del padre.
+
+Sin embargo, aunque cada hijo tenga una copia del descriptor, todos esos descriptores apuntan a la **misma descripción de fichero abierta** mantenida por el kernel. Esto implica que **comparten el desplazamiento actual del fichero (file offset)** y otros atributos.
+
+Por tanto, si los hijos utilizaran el descriptor heredado y realizaran operaciones como:
+
+```c
+lseek(fd, offset, SEEK_SET);
+write(fd, buffer, SEGMENTO);
+```
+
+podrían producirse **condiciones de carrera**, provocando que los datos se escriban en posiciones incorrectas.
+
+Por ello, aunque **sí es posible reutilizar el descriptor heredado**, **no es recomendable en este caso**. La solución adoptada en el ejercicio, donde cada hijo abre el fichero de forma independiente, evita este problema.
+
+Alternativamente, también podría utilizarse la llamada `pwrite()`, que permite escribir en un offset determinado sin modificar el desplazamiento compartido del fichero.
+
+---
+
+#### Ejercicio 13
+
+Considere el código que se muestra a continuación:
+
+```c
+int global;
+
+void main() {
+
+    int local = 3;
+    pid_t pid;
+
+    global = 10;
+    pid = fork();
+
+    if (pid == 0 ) {
+        global = global + 5;
+        local = local + 5;
+    }
+    else {
+        wait(NULL);
+        global += 10;
+        local += 10;
+    }
+
+    printf("global:%d local:%d\n", global, local);
+}
+```
+
+Los mensajes que aparecerán en la terminal son:
+
+```text
+global:15 local:8
+global:20 local:13
+```
+
+El resultado **no depende del orden de planificación de los procesos**, ya que la llamada `wait(NULL)` fuerza al padre a esperar la terminación del hijo antes de continuar su ejecución.
+
+Además, tras `fork()`, cada proceso posee una copia independiente de las variables globales y locales, por lo que los cambios realizados por un proceso no son visibles para el otro.
+
+![Ejercicio 13](Imagenes/Pasted%20image%2020260608200757.png)
+
+---
+
+#### Ejercicio 14
+
+Considere el código que se muestra a continuación:
+
+```c
+int a = 3;
+
+void main() {
+
+    int b = 2;
+
+    for (i = 0; i < 4; i++) {
+
+        pid_t p = fork();
+
+        if (p == 0) {
+
+            b++;
+
+            execlp("/usr/bin/sleep", "/usr/bin/sleep", "2", NULL);
+
+            a++;
+
+        }
+        else {
+
+            wait(NULL);
+
+            a++;
+
+            b--;
+
+        }
+
+    }
+
+    printf("variables - a:%d b:%d\n", a, b);
+
+}
+```
+
+La llamada `execlp()` reemplaza el código del hijo por el programa `sleep`, por lo que la instrucción `a++` situada después de `execlp()` nunca se ejecuta.
+
+El padre espera la finalización de cada hijo mediante `wait(NULL)` antes de continuar, incrementando `a` y decrementando `b` en cada iteración.
+
+La evolución de las variables del padre es:
+
+|Iteración|a|b|
+|---|---|---|
+|Inicial|3|2|
+|1|4|1|
+|2|5|0|
+|3|6|-1|
+|4|7|-2|
+
+Por tanto, el único mensaje mostrado por pantalla será:
+
+```text
+variables - a:7 b:-2
+```
+
+Durante la ejecución se crean **4 procesos hijo** (5 procesos en total contando el padre).
+
+Debido a que el padre ejecuta `wait(NULL)` después de cada `fork()`, como máximo coexisten **2 procesos simultáneamente**: el padre y un único hijo ejecutando `sleep`.
+
+![Ejercicio 14](Imagenes/Pasted%20image%2020260608201511.png)
+
+---
+

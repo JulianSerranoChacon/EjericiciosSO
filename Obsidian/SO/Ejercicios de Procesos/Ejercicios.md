@@ -1459,3 +1459,697 @@ aparecen porque sus padres terminaron antes que ellos y fueron **adoptados por `
 
 ---
 
+#### 💻Ejercicio 11  Escribir un programa que genere un fichero con 5 procesos concurrentes con la siguiente estructura:
+
+El proceso padre creará el fichero de salida output.txt y escribirá el primer segmento de 5 ceros (00000). A continuación creará 5 hijos y esperará a que termine cada uno mostrando el PID y número de hijo. Cada hijo realiza las siguientes acciones:
+
+- Abrirá el archivo y desplazará el puntero de escritura el offset correspondiente.
+    
+- Escribirá la secuencia correspondiente (“11111”, “22222”...). Esta parte puede implementarse de dos formas:
+    
+
+- Creando una cadena con la secuencia correspondiente, con sprintf(3); y escribiendo la cadena en el archivo.
+    
+- Definiendo un array con cada posición inicializada al carácter correspondiente al hijo (char c = ‘0’ + index) ; y escribiendo el array en el archivo
+    
+
+Ejemplo de ejecución:
+
+``` bash
+$ ./eje10
+
+El proceso hijo 5 con PID 1890 terminó correctamente
+
+El proceso hijo 4 con PID 1889 terminó correctamente
+
+El proceso hijo 3 con PID 1888 terminó correctamente
+
+El proceso hijo 2 con PID 1887 terminó correctamente
+
+El proceso hijo 1 con PID 1886 terminó correctamente
+
+Escritura completada en output.txt
+
+$ cat output.txt 
+
+000001111122222333334444455555
+```
+
+
+Pista: Usar el código de retorno en cada hijo igual al número de tarea (exit(2)) de forma que con la llamada wait(2) se puedan obtener ambos valores: PID e ID del hijo.
+
+Respuesta:
+
+``` C
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <string.h>
+
+#define NUM_HIJOS 5
+#define SEGMENTO 5
+
+int main() {
+    int fd;
+    pid_t pid;
+    int i;
+
+    // 1. Crear archivo y escribir los primeros 5 ceros
+    fd = open("output.txt", O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    if (fd == -1) {
+        perror("Error al crear el archivo");
+        exit(EXIT_FAILURE);
+    }
+
+    char inicial[SEGMENTO + 1];
+    memset(inicial, '0', SEGMENTO);
+    inicial[SEGMENTO] = '\0';
+
+    if (write(fd, inicial, SEGMENTO) != SEGMENTO) {
+        perror("Error al escribir inicial");
+        close(fd);
+        exit(EXIT_FAILURE);
+    }
+    close(fd);
+
+    // 2. Crear 5 procesos hijos
+    for (i = 1; i <= NUM_HIJOS; i++) {
+        pid = fork();
+        if (pid < 0) {
+            perror("Error en fork");
+            exit(EXIT_FAILURE);
+        } else if (pid == 0) {
+            // Código del hijo
+            int offset = SEGMENTO * i; // Calculamos el desplazamiento
+            fd = open("output.txt", O_WRONLY);
+            if (fd == -1) {
+                perror("Hijo: Error al abrir archivo");
+                exit(EXIT_FAILURE);
+            }
+
+            // Desplazar puntero de escritura
+            if (lseek(fd, offset, SEEK_SET) == -1) {
+                perror("Hijo: Error en lseek");
+                close(fd);
+                exit(EXIT_FAILURE);
+            }
+
+            // Crear la cadena a escribir
+            char buffer[SEGMENTO];
+            memset(buffer, '0' + i, SEGMENTO);
+
+            if (write(fd, buffer, SEGMENTO) != SEGMENTO) {
+                perror("Hijo: Error al escribir");
+                close(fd);
+                exit(EXIT_FAILURE);
+            }
+
+            close(fd);
+            exit(i); // Código de salida = número de hijo
+        }
+        // Código del padre continúa aquí
+    }
+
+    // 3. Esperar a cada hijo y mostrar PID + número de hijo
+    int status;
+    pid_t hijo_pid;
+    for (i = 0; i < NUM_HIJOS; i++) {
+        hijo_pid = wait(&status);
+        if (hijo_pid == -1) {
+            perror("Error en wait");
+            exit(EXIT_FAILURE);
+        }
+
+        if (WIFEXITED(status)) {
+            int num_hijo = WEXITSTATUS(status);
+            printf("El proceso hijo %d con PID %d terminó correctamente\n", num_hijo, hijo_pid);
+        }
+    }
+
+    printf("Escritura completada en output.txt\n");
+    return 0;
+}
+```
+
+![[imagenes/Pasted image 20260608192241.png]]
+
+---
+
+#### Ejercicio 12 Considera el programa descrito en el Ejercicio 11. Dado que la tabla de descriptores se hereda ¿Es posible usar el descriptor de fichero abierto por el padre en los hijos?
+
+Sí, **es posible usar el descriptor de fichero abierto por el padre en los hijos**, porque tras un `fork()` los hijos **heredan una copia de la tabla de descriptores** del padre.
+
+Sin embargo, aunque cada hijo tenga una copia del descriptor (por ejemplo, el entero `fd`), todos esos descriptores apuntan a la **misma descripción de fichero abierta** (_open file description_) mantenida por el kernel. Esto implica que **comparten el desplazamiento actual del fichero (file offset)** y otros atributos, como los flags de apertura.
+
+Por tanto, si los hijos utilizaran el descriptor heredado y realizaran operaciones como:
+
+```c
+lseek(fd, offset, SEEK_SET);
+write(fd, buffer, SEGMENTO);
+```
+
+podrían producirse **condiciones de carrera**. Un hijo podría cambiar la posición del fichero mediante `lseek()` antes de que otro realizara su `write()`, provocando que los datos se escriban en posiciones incorrectas.
+
+Por ello, aunque **sí es posible reutilizar el descriptor heredado**, **no es recomendable en este caso**. La solución adoptada en el ejercicio, donde cada hijo abre el fichero de forma independiente, evita este problema, ya que cada proceso obtiene su propia descripción de fichero y su propio puntero de posición.
+
+Alternativamente, también podría utilizarse el descriptor compartido junto con la llamada `pwrite()`, que permite escribir en un offset determinado sin modificar el desplazamiento compartido del fichero.
+
+#### Ejercicio 13 Considere el código que se muestra a continuación:
+
+int global;
+
+``` C
+void main() {
+
+    int   local=3;
+
+    pid_t pid;
+
+  
+
+    global=10;
+
+    pid = fork();
+
+    if (pid == 0 ) {
+
+        global = global + 5;
+
+        local  = local + 5;
+
+    }
+
+    else {
+
+        wait(NULL);
+
+        global += 10;
+
+        local  += 10;
+
+    }
+
+    printf(“global:%d local:%d\n”, global, local);
+
+} 
+```
+
+Determine qué mensajes se imprimirán en la terminal. ¿Es posible que el resultado de la ejecución del programa cambie según el orden en que se ejecuten los procesos padre e hijo?. Nota: suponer que todas las llamadas al sistema se ejecutan exitosamente.
+
+Respuesta:
+
+Analicemos el programa paso a paso:
+
+```c
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int global;
+
+void main() {
+    int local = 3;
+    pid_t pid;
+
+    global = 10;
+    pid = fork();
+
+    if (pid == 0) {
+        global = global + 5;
+        local  = local + 5;
+    }
+    else {
+        wait(NULL);
+        global += 10;
+        local  += 10;
+    }
+
+    printf("global:%d local:%d\n", global, local);
+}
+```
+
+## 1. Antes del `fork()`
+
+Existe un único proceso con:
+
+```text
+global = 10
+local  = 3
+```
+
+## 2. Después del `fork()`
+
+Se crean dos procesos:
+
+- **Proceso hijo** (`pid == 0`)
+    
+- **Proceso padre** (`pid > 0`)
+    
+
+Cada proceso recibe una **copia independiente** del espacio de direcciones del padre mediante la técnica de **copy-on-write**.
+
+Por tanto, inicialmente ambos tienen:
+
+```text
+global = 10
+local  = 3
+```
+
+pero las modificaciones posteriores realizadas por uno **no afectan al otro**.
+
+---
+
+## 3. Ejecución del hijo
+
+El hijo ejecuta:
+
+```c
+global = global + 5;
+local  = local + 5;
+```
+
+quedando:
+
+```text
+global = 15
+local  = 8
+```
+
+e imprime:
+
+```text
+global:15 local:8
+```
+
+---
+
+## 4. Ejecución del padre
+
+El padre ejecuta primero:
+
+```c
+wait(NULL);
+```
+
+por lo que **espera a que el hijo termine**.
+
+Después:
+
+```c
+global += 10;
+local  += 10;
+```
+
+Como el padre conserva sus propias copias:
+
+```text
+global = 10 + 10 = 20
+local  = 3 + 10 = 13
+```
+
+e imprime:
+
+```text
+global:20 local:13
+```
+
+---
+
+## Mensajes mostrados
+
+La salida será:
+
+```text
+global:15 local:8
+global:20 local:13
+```
+
+---
+
+## ¿Puede cambiar el resultado según el orden de ejecución?
+
+**No.**
+
+Aunque normalmente el planificador del sistema operativo decide el orden en que se ejecutan padre e hijo, en este programa el padre realiza:
+
+```c
+wait(NULL);
+```
+
+lo que obliga a que el padre espere a que el hijo termine antes de continuar.
+
+Por tanto:
+
+1. El hijo siempre imprimirá:
+    
+    ```text
+    global:15 local:8
+    ```
+    
+2. El padre siempre imprimirá:
+    
+    ```text
+    global:20 local:13
+    ```
+    
+
+Además, dado que ambos procesos tienen copias independientes de las variables `global` y `local`, las modificaciones realizadas en un proceso no afectan a las variables del otro.
+
+### Conclusión
+
+> Los mensajes que aparecerán en la terminal son:
+> 
+> ```text
+> global:15 local:8
+> global:20 local:13
+> ```
+> 
+> El resultado **no depende del orden de planificación de los procesos**, ya que la llamada `wait(NULL)` fuerza al padre a esperar la terminación del hijo antes de continuar su ejecución. Asimismo, tras `fork()`, cada proceso posee una copia independiente de las variables globales y locales, por lo que los cambios realizados por un proceso no son visibles para el otro.
+
+![[imagenes/Pasted image 20260608200757.png]]
+
+---
+
+#### Ejercicio 14 Considere el código que se muestra a continuación:
+```C
+int a = 3;
+
+void main() {
+
+    int b=2;
+
+    for (i=0;i<4;i++) {
+
+        pid_t p=fork();
+
+        if (p==0) {
+
+            b++;
+
+            execlp("/usr/bin/sleep", “/usr/bin/sleep”, “2”, NULL);
+
+            a++;
+
+        }
+
+        else {
+
+           wait(NULL);
+
+           a++;
+
+           b--;
+
+        }
+
+    }
+
+    printf(“variables - a:%d b:%d\n”, a, b);
+
+}
+```
+
+Determine qué mensajes se imprimirán en la terminal. ¿Cuántos procesos se crean en total? ¿Cuántos coexisten en el sistema como máximo?. Nota: suponer que todas las llamadas al sistema se ejecutan exitosamente.
+
+Respuesta:
+
+Analicemos el programa:
+
+```c
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int a = 3;
+void main() {
+    int b=2;
+    for (int i=0;i<4;i++) {
+        pid_t p=fork();
+        if (p==0) {
+            b++;
+            execlp("/usr/bin/sleep", "/usr/bin/sleep", "2", NULL);
+            a++;
+        }
+        else {
+           wait(NULL);
+           a++;
+           b--;
+        }
+    }
+    printf("variables - a:%d b:%d\n", a, b);
+}
+```
+
+## 1. ¿Qué ocurre en el hijo?
+
+Cuando `fork()` devuelve `0`, el hijo ejecuta:
+
+```c
+b++;
+execlp("/usr/bin/sleep", "/usr/bin/sleep", "2", NULL);
+a++;
+```
+
+La llamada:
+
+```c
+execlp(...)
+```
+
+**reemplaza completamente la imagen del proceso** por el programa `sleep 2`.
+
+Por tanto:
+
+- `b++` **sí se ejecuta**.
+    
+- `sleep` se ejecuta durante 2 segundos.
+    
+- `a++` **nunca se ejecuta**, porque `execlp()` solo retorna si hay error (y el enunciado indica que todas las llamadas tienen éxito).
+    
+
+Además, el hijo se convierte en `sleep` y **no continúa el bucle `for`**.
+
+---
+
+## 2. ¿Qué ocurre en el padre?
+
+En cada iteración:
+
+```c
+wait(NULL);
+a++;
+b--;
+```
+
+El padre:
+
+1. Espera a que termine el hijo (`sleep 2`).
+    
+2. Incrementa `a`.
+    
+3. Decrementa `b`.
+    
+
+El padre es el **único proceso que continúa el bucle**.
+
+---
+
+## 3. Evolución de las variables
+
+Valores iniciales:
+
+```text
+a = 3
+b = 2
+```
+
+### Iteración 1
+
+Se crea un hijo:
+
+- Hijo:
+    
+    ```text
+    b = 3
+    sleep(2)
+    termina
+    ```
+    
+- Padre:
+    
+    ```text
+    a = 4
+    b = 1
+    ```
+    
+
+---
+
+### Iteración 2
+
+Se crea otro hijo:
+
+- Hijo:
+    
+    ```text
+    b = 2
+    sleep(2)
+    termina
+    ```
+    
+- Padre:
+    
+    ```text
+    a = 5
+    b = 0
+    ```
+    
+
+---
+
+### Iteración 3
+
+- Hijo:
+    
+    ```text
+    b = 1
+    sleep(2)
+    termina
+    ```
+    
+- Padre:
+    
+    ```text
+    a = 6
+    b = -1
+    ```
+    
+
+---
+
+### Iteración 4
+
+- Hijo:
+    
+    ```text
+    b = 0
+    sleep(2)
+    termina
+    ```
+    
+- Padre:
+    
+    ```text
+    a = 7
+    b = -2
+    ```
+    
+
+---
+
+## 4. Mensajes impresos
+
+Solo el **proceso padre** alcanza el `printf`, ya que los hijos son reemplazados por `sleep` y terminan.
+
+La salida será:
+
+```text
+variables - a:7 b:-2
+```
+
+---
+
+## 5. ¿Cuántos procesos se crean en total?
+
+Inicialmente existe:
+
+```text
+1 proceso (padre)
+```
+
+El padre ejecuta `fork()` 4 veces y los hijos no continúan el bucle debido al `exec`.
+
+Por tanto, se crean:
+
+```text
+4 procesos hijo
+```
+
+En total existen:
+
+```text
+1 padre + 4 hijos = 5 procesos
+```
+
+Normalmente, cuando se pregunta **"procesos creados"**, se refiere a los nuevos procesos generados:
+
+> **Se crean 4 procesos hijo.**
+
+---
+
+## 6. ¿Cuántos coexisten simultáneamente como máximo?
+
+El padre hace:
+
+```c
+wait(NULL);
+```
+
+inmediatamente después de cada `fork()`.
+
+Por tanto:
+
+1. Se crea un hijo.
+    
+2. Padre espera.
+    
+3. Hijo termina.
+    
+4. Padre continúa a la siguiente iteración.
+    
+
+Nunca hay dos hijos ejecutándose simultáneamente.
+
+El máximo de procesos coexistiendo es:
+
+```text
+Padre + 1 hijo = 2 procesos
+```
+
+---
+
+## Respuesta final
+
+> La llamada `execlp()` reemplaza el código del hijo por el programa `sleep`, por lo que la instrucción `a++` situada después de `execlp()` nunca se ejecuta. Además, el hijo no continúa las siguientes iteraciones del bucle.
+> 
+> El padre espera la finalización de cada hijo mediante `wait(NULL)` antes de continuar, incrementando `a` y decrementando `b` en cada iteración.
+> 
+> La evolución de las variables del padre es:
+> 
+> |Iteración|a|b|
+> |---|---|---|
+> |Inicial|3|2|
+> |1|4|1|
+> |2|5|0|
+> |3|6|-1|
+> |4|7|-2|
+> 
+> Por tanto, el único mensaje mostrado por pantalla será:
+> 
+> ```text
+> variables - a:7 b:-2
+> ```
+> 
+> Durante la ejecución se crean **4 procesos hijo** (5 procesos en total contando el padre).
+> 
+> Debido a que el padre ejecuta `wait(NULL)` después de cada `fork()`, como máximo coexisten **2 procesos simultáneamente**: el padre y un único hijo ejecutando `sleep`.
+
+![[imagenes/Pasted image 20260608201511.png]]
+
+---
+
