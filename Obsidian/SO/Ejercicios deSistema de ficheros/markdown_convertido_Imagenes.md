@@ -43,7 +43,7 @@ Esto mostrará información como:
     
 - Comando ejecutado
 
-![[Pasted image 20260607190144.png]]
+![](Imagenes/Pasted%20image%2020260607190144.png)
 
 ---
 
@@ -83,7 +83,7 @@ Ejemplo de salida:
  1050  1050  1023 R ps -e -o pid,pgid,sid,state,args
 ```
 
-![[Pasted image 20260607190933.png]]
+![](Imagenes/Pasted%20image%2020260607190933.png)
 
 ---
 
@@ -95,7 +95,7 @@ Para observar fácilmente la relación jerárquica entre procesos, puede usarse 
 ps -H -o pid,ppid,pgid,sid,cmd
 ```
 
-![[Pasted image 20260607191034.png]]
+![](Imagenes/Pasted%20image%2020260607191034.png)
 
 o, limitándolo a los procesos del usuario:
 
@@ -103,7 +103,7 @@ o, limitándolo a los procesos del usuario:
 ps -H -u "$USER" -o pid,ppid,pgid,sid,cmd
 ```
 
-![[Pasted image 20260607191112.png]]
+![](Imagenes/Pasted%20image%2020260607191112.png)
 
 El usuario tiene muchos más procesos que la shell
 ### Observaciones típicas
@@ -130,7 +130,7 @@ Por tanto:
 
 > **La shell y los programas que ejecuta comparten el identificador de sesión (SID). Además, los procesos pertenecientes al mismo trabajo suelen compartir el mismo identificador de grupo de procesos (PGID).**
 
-![[Pasted image 20260607191339.png|697]]
+<img src="Imagenes/Pasted%20image%2020260607191339.png" width="697">
 
 procesos de Wayland con el mismo PGID.
 
@@ -180,7 +180,7 @@ En el caso de un comando ejecutado en segundo plano (`sleep 60 &`), normalmente 
 PGID = PID
 ```
 
-![[Pasted image 20260607193918.png]]
+![](Imagenes/Pasted%20image%2020260607193918.png)
 
 
 ---
@@ -250,7 +250,7 @@ int main() {
 }
 ```
 
-![[Pasted image 20260607194639.png]]
+![](Imagenes/Pasted%20image%2020260607194639.png)
 
 Para esta prueba he añadido la línea:
 ```C
@@ -363,7 +363,7 @@ Por tanto:
 
 > **La ejecución imprimirá `12345` en la salida estándar (normalmente el terminal), ya que la redirección se realiza hacia el propio descriptor de salida estándar de la shell.**
 
-![[Pasted image 20260607195316.png]]
+![](Imagenes/Pasted%20image%2020260607195316.png)
 
 En fish el comando no es valido, en bash sí.
 
@@ -484,8 +484,9 @@ Sin embargo, **fish no sigue completamente la semántica POSIX de Bash para este
 | limits  |                             |                                        |
 | maps    |                             |                                        |
 | root    |                             |                                        |
+|         |                             |                                        |
 
-![[Pasted image 20260607195908.png]]
+![](Imagenes/Pasted%20image%2020260607195908.png)
 
 respuesta:
 
@@ -499,7 +500,8 @@ respuesta:
 | `limits`  | Fichero regular virtual (`-r--r--r--`) | Muestra los límites de recursos del proceso (archivos abiertos, tamaño de pila, número máximo de procesos, etc.).               |
 | `maps`    | Fichero regular virtual (`-r--r--r--`) | Muestra el mapa de memoria del proceso: regiones de memoria, bibliotecas compartidas cargadas y permisos asociados.             |
 | `root`    | Enlace simbólico (`lrwxrwxrwx`)        | Apunta al directorio raíz visto por el proceso. En tu caso debería ser `/`.                                                     |
-![[Pasted image 20260607200308.png]]
+
+![](Imagenes/Pasted%20image%2020260607200308.png)
 
 ``` bash
 [verxxuxz@CachyVerXxuxZ Tercera-hoja]$ # Ver el tipo
@@ -690,11 +692,11 @@ int main(int argc, char * argv[]){
 }
 ```
 
-![[Pasted image 20260607211207.png]]
+![](Imagenes/Pasted%20image%2020260607211207.png)
 
-![[Pasted image 20260607211655.png]]
+![](Imagenes/Pasted%20image%2020260607211655.png)
 
-![[Pasted image 20260607211727.png]]
+![](Imagenes/Pasted%20image%2020260607211727.png)
 
 - En el primer caso el hijo termina y queda como Zombie esperando a que termine el proceso padre y poder morir.
 ### Explicación del primer caso (`./Ejercicio5.exe 600 1 &`)
@@ -714,10 +716,10 @@ El kernel mantiene la entrada del hijo hasta que el padre recoja su estado o ter
 
 
 
-![[Pasted image 20260607212346.png]]
-![[Pasted image 20260607212312.png]]
+![](Imagenes/Pasted%20image%2020260607212346.png)
+![](Imagenes/Pasted%20image%2020260607212312.png)
 
-![[Pasted image 20260607212241.png]]
+![](Imagenes/Pasted%20image%2020260607212241.png)
 
 - En el segundo caso tras la muerte del procso padre el hijo queda huerfano y es adoptado por el proceso de systemd (840) a la espera de que termine como podemos ver en la segunda imagen (en la primera el padre aún vive).
 
@@ -748,15 +750,15 @@ Por último, la pregunta del **Ctrl+C** se respondería así:
 > Al pulsar Ctrl+C, el terminal envía la señal **SIGINT** al grupo de procesos en primer plano. Sin embargo, el hijo ejecuta `setsid()`, creando una nueva sesión y un nuevo grupo de procesos independientes del terminal. Como consecuencia, **el padre recibe SIGINT y termina, mientras que el hijo no recibe la señal y continúa ejecutándose** hasta completar su `sleep()`.
 
 
-![[Pasted image 20260607213242.png]]
+![](Imagenes/Pasted%20image%2020260607213242.png)
 
-![[Pasted image 20260607213226.png]]
+![](Imagenes/Pasted%20image%2020260607213226.png)
 
-![[Pasted image 20260607213305.png]]
+![](Imagenes/Pasted%20image%2020260607213305.png)
 
 > Nota: Equivalente a Ctrl+C.
 
-![[Pasted image 20260607213342.png]]
+![](Imagenes/Pasted%20image%2020260607213342.png)
 
 
 - Al igual que en el caso 2 el proceso hijo queda huerfano y es adoptado por el proceso de systemd (840).
@@ -921,15 +923,15 @@ Para este ejercicio, es importante recordar que **`SIGTERM` es la forma recomend
 
 #### 💻Ejercicio 7. En un terminal, arrancar un proceso de larga duración (ej. sleep 600). En otra terminal, enviar diferentes señales al proceso (terminar, interrumpir, parar, continuar) y comprobar el comportamiento.
 
-![[Pasted image 20260607213652.png]]
+![](Imagenes/Pasted%20image%2020260607213652.png)
 
-![[Pasted image 20260607213746.png]]
+![](Imagenes/Pasted%20image%2020260607213746.png)
 
-![[Pasted image 20260607213914.png]]
+![](Imagenes/Pasted%20image%2020260607213914.png)
 
-![[Pasted image 20260607214041.png]]
+![](Imagenes/Pasted%20image%2020260607214041.png)
 
-![[Pasted image 20260607214138.png]]
+![](Imagenes/Pasted%20image%2020260607214138.png)
 
 
 ---
@@ -1040,7 +1042,7 @@ pkill -SIGINT Ejericicio5.exe
  para enviar la señal a todos los procesos con ese nombre.
 
 
-![[Pasted image 20260607215158.png]]
+![](Imagenes/Pasted%20image%2020260607215158.png)
 
 ---
 
@@ -1287,11 +1289,11 @@ Es decir:
     
 - ❌ Error → devuelve `-1` y establece `errno`.
 
-![[Pasted image 20260607234624.png]]
+![](Imagenes/Pasted%20image%2020260607234624.png)
 
-![[Pasted image 20260607234644.png]]
+![](Imagenes/Pasted%20image%2020260607234644.png)
 
-![[Pasted image 20260607234702.png]]
+![](Imagenes/Pasted%20image%2020260607234702.png)
 
 ---
 
@@ -1455,7 +1457,7 @@ aparecen porque sus padres terminaron antes que ellos y fueron **adoptados por `
 > 
 > El esquema jerárquico de creación de procesos corresponde a un árbol binario de profundidad 4. Algunos procesos muestran como padre al proceso `systemd` (PID 828) debido a que sus procesos padres finalizaron antes de que ellos imprimieran su información, siendo adoptados temporalmente por `systemd`.
 
-![[Pasted image 20260608000644.png]]
+![](Imagenes/Pasted%20image%2020260608000644.png)
 
 ---
 
