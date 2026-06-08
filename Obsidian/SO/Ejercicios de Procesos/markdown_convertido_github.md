@@ -1487,7 +1487,7 @@ $ cat output.txt
 000001111122222333334444455555
 ```
 
-![Ejercicio 11](Imagenes/Pasted%20image%2020260608192241.png)
+![Ejercicio 11](imagenes/Pasted%20image%2020260608192241.png)
 
 ---
 
@@ -1554,7 +1554,7 @@ El resultado **no depende del orden de planificación de los procesos**, ya que 
 
 Además, tras `fork()`, cada proceso posee una copia independiente de las variables globales y locales, por lo que los cambios realizados por un proceso no son visibles para el otro.
 
-![Ejercicio 13](Imagenes/Pasted%20image%2020260608200757.png)
+![Ejercicio 13](imagenes/Pasted%20image%2020260608200757.png)
 
 ---
 
@@ -1623,7 +1623,7 @@ Durante la ejecución se crean **4 procesos hijo** (5 procesos en total contando
 
 Debido a que el padre ejecuta `wait(NULL)` después de cada `fork()`, como máximo coexisten **2 procesos simultáneamente**: el padre y un único hijo ejecutando `sleep`.
 
-![Ejercicio 14](Imagenes/Pasted%20image%2020260608201511.png)
+![Ejercicio 14](imagenes/Pasted%20image%2020260608201511.png)
 
 ---
 
