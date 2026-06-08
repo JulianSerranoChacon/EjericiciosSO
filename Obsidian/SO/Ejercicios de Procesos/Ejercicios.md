@@ -2152,4 +2152,206 @@ Padre + 1 hijo = 2 procesos
 ![[imagenes/Pasted image 20260608201511.png]]
 
 ---
+💻Ejercicio 15. La política de planificación y la prioridad de un proceso puede consultarse y modificarse con chrt(1). Adicionalmente, nice(1) y renice(1) permiten ajustar el valor de nice de un proceso. Consultar la página de manual de ambos comandos:
+
+- Ejecutar una shell (/usr/bin/bash) con nice +10. 
+    
+- Ejecutar una shell (/usr/bin/bash) con nice -10. 
+    
+- Ejecutar una  shell (/usr/bin/bash) con política de planificación a SCHED_FIFO y prioridad 12.
+    
+
+En todos los casos comprobar la salida del comando chrt -p `<PID de la nueva shell>` y ps -al, y completar la siguiente tabla.
+
+  
+
+|   |   |   |   |   |
+|---|---|---|---|---|
+|Proceso|Pólitica de planidicación|Prioridad|nice|Require privilegios de  root|
+|Shell con nice +10|||||
+|Shell con nice -10|||||
+|Shell fifo y prio 12|||||
+
+- Considerando que los tres procesos están listos para ejecutarse determina el orden en el que se ejecutarán.
+    
+- ¿Cuál es la prioridad y nice de los procesos que se crean en la nueva shell? (p.ej. ejecuta el comando sleep 600 y determina sus prioridad, política de planificación y nice)
+
+
+
+
+Para realizar el ejercicio puedes usar los siguientes comandos:
+
+## 1. Shell con `nice +10`
+
+```bash
+nice -n 10 /usr/bin/bash
+```
+
+Dentro de esa nueva shell:
+
+```bash
+echo $$
+chrt -p $$
+ps -al -p $$
+```
+
+![[imagenes/Pasted image 20260608211300.png]]
+
+---
+
+## 2. Shell con `nice -10`
+
+Reducir el valor de `nice` (aumentar prioridad) requiere privilegios de administrador:
+
+```bash
+sudo nice -n -10 /usr/bin/bash
+```
+
+Comprobar:
+
+```bash
+echo $$
+chrt -p $$
+ps -al -p $$
+```
+
+![[imagenes/Pasted image 20260608211350.png]]
+
+---
+
+## 3. Shell con política `SCHED_FIFO` y prioridad 12
+
+También requiere privilegios de administrador:
+
+```bash
+sudo chrt -f 12 /usr/bin/bash
+```
+
+Comprobar:
+
+```bash
+echo $$
+chrt -p $$
+ps -al -p $$
+```
+
+![[imagenes/Pasted image 20260608211451.png]]
+
+---
+
+## Tabla esperada
+
+|Proceso|Política de planificación|Prioridad|nice|¿Requiere privilegios de root?|
+|---|---|---|---|---|
+|Shell con `nice +10`|`SCHED_OTHER` (`TS`)|Menor que la normal|`10`|No|
+|Shell con `nice -10`|`SCHED_OTHER` (`TS`)|Mayor que la normal|`-10`|Sí|
+|Shell con `SCHED_FIFO` prioridad 12|`SCHED_FIFO` (`FF`)|`12` (RT)|`0` (sin efecto práctico)|Sí|
+
+---
+
+## Orden de ejecución
+
+Suponiendo que los tres procesos están preparados para ejecutarse simultáneamente:
+
+1. **Shell con `SCHED_FIFO` prioridad 12**
+    
+2. **Shell con `nice -10`**
+    
+3. **Shell con `nice +10`**
+    
+
+La razón es que:
+
+- Los procesos con políticas **tiempo real** (`SCHED_FIFO`, `SCHED_RR`) tienen prioridad sobre los procesos normales (`SCHED_OTHER`).
+    
+- Dentro de `SCHED_FIFO`, cuanto mayor sea la prioridad numérica (1–99), antes se ejecutará.
+    
+- Para procesos `SCHED_OTHER`, un **menor valor de nice implica mayor prioridad**.
+    
+
+---
+
+## Procesos creados desde la nueva shell
+
+Los procesos hijos heredan la política y atributos de planificación del padre.
+
+Por ejemplo:
+
+```bash
+sleep 600 &
+echo $!
+```
+
+Y comprobar:
+
+```bash
+chrt -p <PID>
+ps -al -p <PID>
+```
+
+### Resultado esperado
+
+- **Shell con `nice +10`:**
+    
+    - `sleep` heredará:
+        
+        - Política: `SCHED_OTHER`
+            
+        - `nice = 10`
+            
+        - Prioridad correspondiente.
+            
+- **Shell con `nice -10`:**
+    
+    - `sleep` heredará:
+        
+        - Política: `SCHED_OTHER`
+            
+        - `nice = -10`
+            
+        - Prioridad correspondiente.
+            
+- **Shell con `SCHED_FIFO` prioridad 12:**
+    
+    - `sleep` heredará:
+        
+        - Política: `SCHED_FIFO`
+            
+        - Prioridad 12.
+            
+        - El valor de `nice` permanecerá normalmente en `0`, ya que no afecta a procesos de tiempo real.
+            
+
+### Conclusión
+
+> Los procesos creados desde una shell heredan la política de planificación y el valor de `nice` del proceso padre. Por tanto, un `sleep 600` ejecutado desde cada una de las tres shells tendrá los mismos parámetros de planificación que la shell que lo creó.
+
+![[imagenes/Pasted image 20260608211647.png]]
+consola fish normal.
+
+---
+
+#### Ejercicio 16. En un son en segundos):
+
+|   |   |   |   |   |   |
+|---|---|---|---|---|---|
+|Proceso|Llegada|CPU|E/S|CPU|E/S|
+|P1|0|1|5|1|-|
+|P2|1|3|1|1|1|
+|P3|0|5|4|1|-|
+|P4|3|3|2|1|1|
+
+  
+
+Determina los tiempos de retorno (turnaround) y de espera para cada proceso y la productividad (throughput) del sistema para las siguientes políticas de planificación:
+
+- First Come First Serve (FCFS)
+    
+- Shortest Job First (SJF)
+    
+- Round Robin (RR) con cuanto de 3s
+    
+- Round Robin (RR) con cuanto de 1s
+
+Respuesta:
 
