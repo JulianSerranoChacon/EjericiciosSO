@@ -31,22 +31,22 @@
     
 - Escribir una línea de comandos que muestre qué  tipos diferentes hay en ese directorio. Los tipos se indicarán con el caracter (d, -, l...) usado por el comando ls. Ejemplo:
 
-![](Pasted%20image%2020260603183055.png)
+![](Imagenes/Pasted%20image%2020260603183055.png)
 
 
 Respuesta:
 
 - ls -la meustra todos los ficheros de manera detallada
 
-![](Pasted%20image%2020260603184623.png)
+![](Imagenes/Pasted%20image%2020260603184623.png)
 
 - ls -lA /run | tail -n +2 | cut -c1 | sort -u | wc -l muestra el numero de ficheros diferentes que hay.
 
-![](Pasted%20image%2020260603184707.png)
+![](Imagenes/Pasted%20image%2020260603184707.png)
 
 - ls -lA| tail -n +2 | cut -c1 | sort -u| wc -l muestra los tipos de ficheros ordenados
 
-![](Pasted%20image%2020260603184730.png)
+![](Imagenes/Pasted%20image%2020260603184730.png)
 
 
 ---
@@ -78,7 +78,7 @@ cat archivo.txt
 
 respuesta: 
 
-![](Pasted%20image%2020260603185841.png)
+![](Imagenes/Pasted%20image%2020260603185841.png)
 
 - El inodo del fichero es 1948663
 
@@ -92,7 +92,7 @@ respuesta:
 	- Bloques ocupados: **8 bloques de 512 bytes** (así los muestra `stat` normalmente en Linux).
 - Para la ruta relativa he usado el comando df:
 
-	![](Pasted%20image%2020260603191130.png)
+	![](Imagenes/Pasted%20image%2020260603191130.png)
 
 	- del que podemos sacar que la ruta relativa del disco está en /dev/sda1, que está montado en /home y el uso del disco está al 64%.
 
@@ -101,17 +101,17 @@ respuesta:
 		- el tiempo de acceso(atime),
 		- el tiempo de modificación(mtime).
 		- el tiempo de cambio (ctime).
-	  ![](Pasted%20image%2020260603191501.png)
+	  ![](Imagenes/Pasted%20image%2020260603191501.png)
 	- Con echo “Otra línea más en el fichero” >> archivo.txt cambian:
 		- Tamaño
 		- Bloques ocupados (si es necesario)
 		- Modificación (mtime)
 		- Cambio (ctime)
 		
-		![](Pasted%20image%2020260603191929.png)
+		![](Imagenes/Pasted%20image%2020260603191929.png)
 	- Con cat archivo.txt cambian:
 		- Acceso (atime) (solo lee el fichero)
-		![](Pasted%20image%2020260603192209.png)
+		![](Imagenes/Pasted%20image%2020260603192209.png)
 
 --- 
 
@@ -192,7 +192,7 @@ int main(int argc, char *argv[]){
 }
 ```
 
-![](Pasted%20image%2020260605205221.png)
+![](Imagenes/Pasted%20image%2020260605205221.png)
 
 ---
 
@@ -226,9 +226,9 @@ drwxrwxrwt 12 root root  4096 Fre 12 06:48 /tmp/
 
 Respuesta:
 
-- ![](Pasted%20image%2020260604182050.png)
+- ![](Imagenes/Pasted%20image%2020260604182050.png)
 
-- ![](Pasted%20image%2020260604182233.png) 
+- ![](Imagenes/Pasted%20image%2020260604182233.png) 
 - #### Directorio `/tmp`
 
 ```
@@ -343,8 +343,8 @@ chmod 755 fichero
 - ¿Qué sucede con los enlaces si se borra el archivo.txt, siguen los contenidos disponibles? ¿Cómo cambia el número de enlaces?
 
 
-![](Pasted%20image%2020260604182920.png)
-![](Pasted%20image%2020260604191924.png)
+![](Imagenes/Pasted%20image%2020260604182920.png)
+![](Imagenes/Pasted%20image%2020260604191924.png)
 
 
 Tras ejecutar:
@@ -385,7 +385,7 @@ hardlink.txt  → 1 enlace
 
 El contenido del fichero permanece accesible a través de `hardlink.txt` hasta que desaparezca el último enlace duro.
 
-![](Pasted%20image%2020260604192155.png)
+![](Imagenes/Pasted%20image%2020260604192155.png)
 
 ---
 
@@ -689,13 +689,13 @@ int main(int argc, char *argv[])
 ```
 
 
-![](Pasted%20image%2020260605204458.png)
+![](Imagenes/Pasted%20image%2020260605204458.png)
 
-![](Pasted%20image%2020260605205822.png)
+![](Imagenes/Pasted%20image%2020260605205822.png)
 
-![](Pasted%20image%2020260605211058.png)
+![](Imagenes/Pasted%20image%2020260605211058.png)
 
-![](Pasted%20image%2020260605211305.png)
+![](Imagenes/Pasted%20image%2020260605211305.png)
 
 - ¡Perfecto! 🎉
 
@@ -805,7 +805,7 @@ Podrías responder algo como:
 
 Con ese `strace`, la parte más delicada de la práctica está correctamente resuelta.
 
-- ![](Pasted%20image%2020260605211819.png)
+- ![](Imagenes/Pasted%20image%2020260605211819.png)
 ---
 
 ## 📄 Explicación: generación y verificación de un fichero sparse
@@ -1022,7 +1022,7 @@ lrwxrwxrwx 1 ubuntu ubuntu   11 Feb 3 22:02 link1 -> /etc/passwd
 drwxr-xr-x 2 ubuntu ubuntu 4096 Feb 3 22:02 subdir1`
 ```
 
-![](Pasted%20image%2020260606173021.png)
+![](Imagenes/Pasted%20image%2020260606173021.png)
 
 ---
 
@@ -1503,17 +1503,17 @@ Cuestiones
 - Considerar ahora el fichero sparse y repetir la cuestión anterior. Comparar los punteros inicializados en ambos casos.
 Respuesta:
 
-![](Pasted%20image%2020260606233450.png)
+![](Imagenes/Pasted%20image%2020260606233450.png)
 
-![](Pasted%20image%2020260606233556.png)
+![](Imagenes/Pasted%20image%2020260606233556.png)
 
-![](Pasted%20image%2020260607000028.png)
+![](Imagenes/Pasted%20image%2020260607000028.png)
 
-![](Pasted%20image%2020260607000945.png)
+![](Imagenes/Pasted%20image%2020260607000945.png)
 
-![](Pasted%20image%2020260607001351.png)
+![](Imagenes/Pasted%20image%2020260607001351.png)
 
-![](Pasted%20image%2020260607001412.png)
+![](Imagenes/Pasted%20image%2020260607001412.png)
 
 Perfecto, ya tienes toda la información necesaria para analizar la estructura de los inodos. De los resultados obtenidos se puede concluir:
 
